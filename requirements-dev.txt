@@ -1,0 +1,26 @@
+# Code formatting
+black==23.11.0
+isort==5.13.2
+
+# Linting
+ruff==0.1.6
+flake8==6.1.0
+
+# Type checking
+mypy==1.7.1
+
+# Testing tools
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+pytest-xdist==3.5.0
+faker==20.1.0
+
+# Pre-commit hooks
+pre-commit==3.5.0
+
+# Development server
+watchfiles==0.21.0
+
+# Documentation
+mkdocs==1.5.3
+mkdocs-material==9.5.3
