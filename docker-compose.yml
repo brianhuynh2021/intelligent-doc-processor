@@ -7,14 +7,14 @@ services:
       - app-network
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}  # ← From .env
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-doc_processor}
     ports:
       - "5433:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-doc_processor}"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -27,6 +27,8 @@ services:
       - app-network
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -44,9 +46,24 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # Individual vars (for app/core/config.py)
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-doc_processor}
+      DB_HOST: db
+      DB_PORT: 5432
+
+      CACHE_HOST: redis
+      CACHE_PORT: 6379
+
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEBUG: ${DEBUG:-true}
+
+      # Composite URLs (keep for compatibility)
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-doc_processor}
       REDIS_URL: redis://redis:6379/0
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+
     depends_on:
       db:
         condition: service_healthy
@@ -54,9 +71,11 @@ services:
         condition: service_healthy
     volumes:
       - ./app:/app/app
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
       - ./uploads:/app/uploads
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD-SHELL", "python -c 'import requests; requests.get(\"http://localhost:8000/health\")' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -68,3 +87,4 @@ networks:
 
 volumes:
   pg_data:
+  redis_data:
