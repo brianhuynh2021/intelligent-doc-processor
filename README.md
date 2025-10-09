@@ -317,9 +317,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 👤 Author
 
 **Brian Huynh**
-- Portfolio: [your-portfolio.com]
-- LinkedIn: [linkedin.com/in/yourprofile]
-- GitHub: [@yourusername]
+- Portfolio: https://brianhuynh2021.github.io/brianhuynh_porfolio/
+- LinkedIn: [\[linkedin.com/in/yourprofile\]](https://www.linkedin.com/in/brianhuynh2021/)
+- GitHub: (https://github.com/brianhuynh2021)
 - Email: huynh2102@gmail.com
 
 ---
