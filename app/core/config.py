@@ -7,31 +7,29 @@ class AppSettings(BaseSettings):
     """Application settings"""
 
     # Project
-    PROJECT_NAME: str = "Intelligent Doc Processor"
-    VERSION: str = "0.1.0"
-    API_PREFIX: str = "/api/v1"
+    PROJECT_NAME: str = os.getenv("APP_NAME", "Intelligent Doc Processor")
+    VERSION: str = os.getenv("APP_VERSION", "0.1.0")
+    API_PREFIX: str = os.getenv("API_V1_PREFIX", "/api/v1")
     ENVIRONMENT: str = os.getenv("APP_ENV", "development")
     DEBUG: bool = os.getenv("DEBUG", "true").lower() == "true"
-
+    HOST: str = os.getenv("HOST", "0.0.0.0")
+    PORT: int = int(os.getenv("PORT", "8000"))
     # Database
-    DB_USER: str = os.getenv("POSTGRES_USER", "postgres")
-    DB_PASS: str = os.getenv("POSTGRES_PASSWORD", "postgres")
-    DB_NAME: str = os.getenv("POSTGRES_DB", "doc_processor")
-    DB_HOST: str = "db"
-    DB_PORT: int = 5432
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL",
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/intelligent_docs",
+    )
+    DATABASE_POOL_SIZE: int = int(os.getenv("DATABASE_POOL_SIZE", "5"))
+    DATABASE_MAX_OVERFLOW: int = int(os.getenv("DATABASE_MAX_OVERFLOW", "10"))
 
     @property
     def get_db_url(self) -> str:
         """Build database URL"""
-        return (
-            f"postgresql+psycopg2://{self.DB_USER}:"
-            f"{self.DB_PASS}@{self.DB_HOST}:"
-            f"{self.DB_PORT}/{self.DB_NAME}"
-        )
+        return self.DATABASE_URL.replace("+asyncpg", "")
 
     # Cache Redis
-    CACHE_HOST: str = "redis"
-    CACHE_PORT: int = 6379
+    CACHE_HOST: str = os.getenv("REDIS_HOST", "localhost")
+    CACHE_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
     CACHE_PASSWORD: str = os.getenv("REDIS_PASSWORD", "")
 
     @property
@@ -45,14 +43,44 @@ class AppSettings(BaseSettings):
 
     # Security
     SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-change-in-prod")
-    HASH_ALGORITHM: str = "HS256"
-    TOKEN_LIFETIME: int = 30
+    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
+        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+    )
 
-    # Upload
-    UPLOAD_PATH: str = "./uploads"
-    MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
+    # File Upload
+    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
+    MAX_UPLOAD_SIZE: int = int(os.getenv("MAX_UPLOAD_SIZE", "10485760"))
+    ALLOWED_EXTENSIONS: str = os.getenv(
+        "ALLOWED_EXTENSIONS", "pdf,png,jpg,jpeg,txt,docx"
+    )
+
+    @property
+    def get_allowed_extensions(self) -> list[str]:
+        """Get allowed file extensions as list"""
+        return self.ALLOWED_EXTENSIONS.split(",")
+
+    @property
+    def get_upload_path(self) -> str:
+        """Get upload directory path"""
+        return self.UPLOAD_DIR
+
+    # AI/ML Settings
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "your-openai-api-key-here")
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4")
+    MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "4096"))
+
+    # Vector Database (Add these from .env)
+    VECTOR_DB_PATH: str = os.getenv("VECTOR_DB_PATH", "./data/vector_db")
+    VECTOR_COLLECTION_NAME: str = os.getenv("VECTOR_COLLECTION_NAME", "documents")
+
+    # Logging (Add these from .env)
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    LOG_FORMAT: str = os.getenv("LOG_FORMAT", "json")
 
     class Config:
+        env_file = ".env"
         case_sensitive = True
 
 
