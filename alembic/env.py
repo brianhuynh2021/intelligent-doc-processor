@@ -6,9 +6,7 @@ from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 from app.core.config import app_config
-from app.models.base import Base
-from app.models.document import Document  # noqa: F401
-from app.models.user import User  # noqa: F401
+from app.models import Base, Chunk, Document, User  # noqa: F401
 
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
