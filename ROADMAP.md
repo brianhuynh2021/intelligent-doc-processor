@@ -502,7 +502,7 @@ project/
 
 ---
 
-## 📊 THÁNG 3: Advanced AI Features
+## 📊 THÁNG 3: Advanced AI Features & Model Context Protocol
 
 ### **Week 9: Multi-Modal Processing** (Ngày 57-63)
 
@@ -624,7 +624,7 @@ project/
 
 ---
 
-### **Week 11: Model Optimization** (Ngày 71-77)
+### **Week 11: Model Context Protocol (MCP) & Optimization** (Ngày 71-77)
 
 **Ngày 71: Model Selection Strategy**
 - [ ] Compare LLM providers (OpenAI, Anthropic, open-source)
@@ -634,13 +634,18 @@ project/
 - [ ] Create decision matrix
 - [ ] Document findings
 
-**Ngày 72: Prompt Optimization**
-- [ ] A/B testing framework
-- [ ] Automated prompt evaluation
-- [ ] Prompt versioning
-- [ ] Performance tracking
-- [ ] Find optimal prompts
-- [ ] Version control system
+**Ngày 72: Model Context Protocol (MCP) & Prompt Optimization**
+- [ ] Design MCP context schema (vector DB, metadata, knowledge graph)
+- [ ] Create context aggregation pipeline
+- [ ] Implement context prioritization logic
+- [ ] Build intelligent model routing system (GPT-3.5 vs GPT-4)
+- [ ] Set up cost tracking per model/query
+- [ ] Create A/B testing framework for prompts
+- [ ] Implement automated prompt evaluation
+- [ ] Add prompt versioning system
+- [ ] Performance tracking dashboard
+- [ ] Document MCP architecture
+- [ ] Test context quality & cost metrics
 
 **Ngày 73: Model Caching**
 - [ ] Semantic cache implementation

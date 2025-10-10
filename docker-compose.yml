@@ -6,15 +6,15 @@ services:
     networks:
       - app-network
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-doc_processor}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-intelligent_docs}
     ports:
       - "5433:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-doc_processor}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-intelligent_docs}"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -47,21 +47,23 @@ services:
       - "8000:8000"
     environment:
       # Individual vars (for app/core/config.py)
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-doc_processor}
+      # Use variable names from .env
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-intelligent_docs}
       DB_HOST: db
       DB_PORT: 5432
 
-      CACHE_HOST: redis
-      CACHE_PORT: 6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
 
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
-      ENVIRONMENT: ${ENVIRONMENT:-development}
+      SECRET_KEY: ${SECRET_KEY}
+      ENVIRONMENT: ${APP_ENV:-development}
       DEBUG: ${DEBUG:-true}
 
-      # Composite URLs (keep for compatibility)
-      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-doc_processor}
+      # Composite URLs
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-intelligent_docs}
       REDIS_URL: redis://redis:6379/0
 
     depends_on:
