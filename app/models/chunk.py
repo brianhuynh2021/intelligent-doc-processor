@@ -1,4 +1,14 @@
-from sqlalchemy import Boolean, Column, DateTime, Float, Index, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.sql import func
 
@@ -56,6 +66,7 @@ class Chunk(Base):
 
     # Indexes - Consistent pattern with Document model
     __table_args__ = (
+        UniqueConstraint("document_id", "chunk_index", name="ux_chunk_doc_index"),
         # Most common query: get chunks by document (ordered)
         Index("idx_chunk_doc_active_index", "document_id", "is_deleted", "chunk_index"),
         # Query by owner without joining documents! (denormalized pattern)

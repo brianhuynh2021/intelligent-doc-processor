@@ -12,9 +12,9 @@ Xây dựng production-ready AI platform với clean code, scalable architecture
 ### **Week 1: Project Setup & Infrastructure** (Ngày 1-7)
 
 **Ngày 1: Project Structure & Environment**
-- [ ] Setup Python virtual environment (Python 3.11+)
-- [ ] Initialize Git repository với .gitignore
-- [ ] Create project structure (clean architecture)
+- [x] Setup Python virtual environment (Python 3.11+)
+- [x] Initialize Git repository với .gitignore
+- [x] Create project structure (clean architecture)
 ```
 project/
 ├── app/
@@ -28,16 +28,16 @@ project/
 ├── docker/
 └── docs/
 ```
-- [ ] Setup pre-commit hooks (black, ruff, mypy)
-- [ ] Create requirements.txt với dependencies chính
+- [x] Setup pre-commit hooks (black, ruff, mypy)
+- [x] Create requirements.txt với dependencies chính
 
 **Ngày 2: Docker & Database Setup**
-- [ ] Viết Dockerfile cho FastAPI app
-- [ ] Tạo docker-compose.yml (FastAPI, PostgreSQL, Redis)
-- [ ] Setup Alembic cho database migrations
-- [ ] Tạo models: User, Document, Chunk
-- [ ] Chạy first migration
-- [ ] Test connection PostgreSQL
+- [x] Viết Dockerfile cho FastAPI app
+- [x] Tạo docker-compose.yml (FastAPI, PostgreSQL, Redis)
+- [x] Setup Alembic cho database migrations
+- [x] Tạo models: User, Document, Chunk
+- [x] Chạy first migration
+- [x] Test connection PostgreSQL
 
 **Ngày 3: FastAPI Core API**
 - [ ] Setup FastAPI app với CORS, middleware

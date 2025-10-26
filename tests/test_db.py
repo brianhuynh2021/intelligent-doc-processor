@@ -1,6 +1,12 @@
+# ruff : noqa: E402
 """Test database connection and engine"""
 import sys
 from pathlib import Path
+
+# Add project root to Python path
+project_root = Path(__file__).parent.parent  # noqa: 401
+sys.path.insert(0, str(project_root))  # noqa: 401
+
 from typing import Any, Optional
 
 from sqlalchemy import text
@@ -10,10 +16,6 @@ from app.core.database import SessionLocal, check_db_connection, engine
 from app.models.chunk import Chunk
 from app.models.document import Document
 from app.models.user import User
-
-# Add project root to Python path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
 
 
 def execute_query(conn, query: str) -> Optional[Any]:
