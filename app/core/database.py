@@ -49,9 +49,9 @@ def init_db() -> None:
     This is mainly for testing/development.
     """
     from app.models.base import Base
-    from app.models.chunk import Chunk  # noqa: F401
-    from app.models.document import Document  # noqa: F401
-    from app.models.user import User  # noqa: F401
+    from app.models.chunk_model import Chunk  # noqa: F401
+    from app.models.document_model import Document  # noqa: F401
+    from app.models.user_model import User  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
     print("✅ Database tables created successfully!")

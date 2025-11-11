@@ -42,8 +42,8 @@ class AppSettings(BaseSettings):
         return f"redis://{self.CACHE_HOST}:{self.CACHE_PORT}/0"
 
     # Security
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-change-in-prod")
-    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "dev-secret-change-in-prod")
+    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
     )
@@ -78,6 +78,11 @@ class AppSettings(BaseSettings):
     # Logging (Add these from .env)
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     LOG_FORMAT: str = os.getenv("LOG_FORMAT", "json")
+
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 14
+    REFRESH_COOKIE_NAME: str = "rt"
+    REFRESH_COOKIE_SECURE: bool = True
+    REFRESH_COOKIE_SAMESITE: str = "lax"
 
     class Config:
         env_file = ".env"

@@ -1,5 +1,9 @@
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+
+from app.api.v1.routers.auth_router import router as auth_router
+from app.core.database import engine
 
 app = FastAPI(
     title="Intelligent Document Processor",
@@ -15,6 +19,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+api_v1 = APIRouter(prefix="/api/v1", tags=["v1"])
+
 
 @app.get("/")
 def root():
@@ -25,16 +31,20 @@ def root():
     }
 
 
-@app.get("/health")
+@api_v1.get("/health", tags=["Health"])
 def health():
-    return {
-        "status": "healthy",
-        "database": "not connected yet",
-        "redis": "not connected yet",
-    }
+    """Health check"""
+    status = {"app": "healthy"}
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1")).scalar()
+        status["database"] = "connected ✅"
+    except Exception as e:
+        status["database"] = f"failed ❌: {e}"
+    return status
 
 
-@app.get("/api/v1/info")
+@api_v1.get("/info")
 def info():
     return {
         "name": "Doc Processor API",
@@ -46,3 +56,8 @@ def info():
             "Search & retrieval",
         ],
     }
+
+
+api_v1.include_router(auth_router)
+
+app.include_router(api_v1)

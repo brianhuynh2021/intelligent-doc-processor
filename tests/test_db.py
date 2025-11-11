@@ -13,9 +13,9 @@ from sqlalchemy import text
 
 from app.core.config import app_config
 from app.core.database import SessionLocal, check_db_connection, engine
-from app.models.chunk import Chunk
-from app.models.document import Document
-from app.models.user import User
+from app.models.chunk_model import Chunk
+from app.models.document_model import Document
+from app.models.user_model import User
 
 
 def execute_query(conn, query: str) -> Optional[Any]:

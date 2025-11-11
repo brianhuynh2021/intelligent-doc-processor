@@ -15,7 +15,7 @@ class User(Base):
     # Authentication fields
     email = Column(String(255), unique=True, nullable=False, index=True)
     username = Column(String(100), unique=True, nullable=False, index=True)
-    password_hash = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=False)
 
     # User status
     is_active = Column(Boolean, default=True, nullable=False)

@@ -40,10 +40,10 @@ project/
 - [x] Test connection PostgreSQL
 
 **Ngày 3: FastAPI Core API**
-- [ ] Setup FastAPI app với CORS, middleware
-- [ ] Implement health check endpoint
-- [ ] Tạo authentication (JWT tokens)
-- [ ] User registration/login endpoints
+- [x] Setup FastAPI app với CORS, middleware
+- [x] Implement health check endpoint
+- [x] Tạo authentication (JWT tokens)
+- [x] User registration/login endpoints
 - [ ] Setup pytest với test fixtures
 - [ ] Viết test cho auth endpoints (coverage >80%)
 
