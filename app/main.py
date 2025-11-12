@@ -19,7 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-api_v1 = APIRouter(prefix="/api/v1", tags=["v1"])
+api_v1 = APIRouter(prefix="/api/v1")
 
 
 @app.get("/")

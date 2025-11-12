@@ -44,8 +44,8 @@ project/
 - [x] Implement health check endpoint
 - [x] Tạo authentication (JWT tokens)
 - [x] User registration/login endpoints
-- [ ] Setup pytest với test fixtures
-- [ ] Viết test cho auth endpoints (coverage >80%)
+- [x] Setup pytest với test fixtures
+- [x] Viết test cho auth endpoints (coverage >80%)
 
 **Ngày 4: File Upload Service**
 - [ ] Implement file upload endpoint (multipart/form-data)
