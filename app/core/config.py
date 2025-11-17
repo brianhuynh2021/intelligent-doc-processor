@@ -1,6 +1,29 @@
 import os
+from pathlib import Path
 
 from pydantic_settings import BaseSettings
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+UPLOAD_DIR = BASE_DIR / "uploads"
+
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+ALLOWED_CONTENT_TYPES = {
+    # PDF
+    "application/pdf",
+    # DOCX
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    # Images
+    "image/png",
+    "image/jpeg",
+    # CSV
+    "text/csv",
+    "application/vnd.ms-excel",  # một số browser gửi CSV kiểu này
+    # TXT
+    "text/plain",
+}
+
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
 class AppSettings(BaseSettings):

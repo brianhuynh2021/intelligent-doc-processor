@@ -48,12 +48,12 @@ project/
 - [x] Viết test cho auth endpoints (coverage >80%)
 
 **Ngày 4: File Upload Service**
-- [ ] Implement file upload endpoint (multipart/form-data)
-- [ ] Validate file types (PDF, DOCX, images)
-- [ ] Setup local storage hoặc MinIO
-- [ ] Tạo service lưu file metadata vào DB
-- [ ] Implement file size limits & validation
-- [ ] Test upload với different file types
+- [x] Implement file upload endpoint (multipart/form-data)
+- [x] Validate file types (PDF, DOCX, images, csv, txt)
+- [x] Setup local storage hoặc MinIO
+- [x] Tạo service lưu file metadata vào DB
+- [x] Implement file size limits & validation
+- [x] Test upload với different file types
 
 **Ngày 5: OCR Pipeline - Part 1**
 - [ ] Setup Tesseract OCR
