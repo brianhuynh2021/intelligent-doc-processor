@@ -56,12 +56,12 @@ project/
 - [x] Test upload với different file types
 
 **Ngày 5: OCR Pipeline - Part 1**
-- [ ] Setup Tesseract OCR
-- [ ] Implement PDF → Image conversion (pdf2image)
-- [ ] Tạo OCR service extract text từ images
-- [ ] Handle multi-page documents
-- [ ] Store extracted text trong DB
-- [ ] Test với sample invoices/receipts
+- [x] Setup Tesseract OCR
+- [x] Implement PDF → Image conversion (pdf2image)
+- [x] Tạo OCR service extract text từ images
+- [x] Handle multi-page documents
+- [x] Store extracted text trong DB
+- [x] Test với sample invoices/receipts
 
 **Ngày 6: Text Processing & Chunking**
 - [ ] Implement text chunking strategy (RecursiveCharacterTextSplitter)

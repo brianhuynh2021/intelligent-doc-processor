@@ -73,7 +73,11 @@ async def save_upload_file(file: UploadFile) -> dict:
     }
 
 
-def create_file(db: Session, data: FileCreate) -> FileInDB:
+def create_file(
+    db: Session,
+    data: FileCreate,
+    uploaded_by_user_id: int | None = None,
+) -> FileInDB:
     db_file = FileModel(
         file_id=data.file_id,
         filename=data.filename,
@@ -81,6 +85,7 @@ def create_file(db: Session, data: FileCreate) -> FileInDB:
         content_type=data.content_type,
         size=data.size,
         path=data.path,
+        uploaded_by_user_id=uploaded_by_user_id,
     )
     db.add(db_file)
     db.commit()
