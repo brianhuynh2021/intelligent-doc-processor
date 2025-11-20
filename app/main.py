@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.api.v1.routers.auth_router import router as auth_router
+from app.api.v1.routers.document_router import router as document_router
 from app.api.v1.routers.files_router import router as files_router
 from app.core.database import engine
 
@@ -61,5 +62,6 @@ def info():
 
 api_v1.include_router(auth_router)
 api_v1.include_router(files_router)
+api_v1.include_router(document_router)
 
 app.include_router(api_v1)

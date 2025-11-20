@@ -8,6 +8,10 @@ UPLOAD_DIR = BASE_DIR / "uploads"
 
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+
+TESSERACT_CMD = os.getenv("TESSERACT_CMD", "/opt/homebrew/bin/tesseract")
+POPPLER_PATH = os.getenv("POPPLER_PATH", "/opt/homebrew/opt/poppler/bin")
+
 ALLOWED_CONTENT_TYPES = {
     # PDF
     "application/pdf",
