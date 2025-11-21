@@ -1,10 +1,10 @@
-# app/services/file_service.py
 from pathlib import Path
 
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.config import ALLOWED_CONTENT_TYPES, MAX_FILE_SIZE, UPLOAD_DIR
+from app.models.document_model import Document
 from app.models.file_model import File as FileModel
 from app.schemas.files_schema import (
     FileCreate,
@@ -77,7 +77,12 @@ def create_file(
     db: Session,
     data: FileCreate,
     uploaded_by_user_id: int | None = None,
-) -> FileInDB:
+) -> tuple[FileModel, Document]:
+    """
+    Tạo bản ghi File trong DB và đồng thời tạo luôn Document tương ứng.
+    Document lúc này chưa có text_content (chưa OCR), chỉ gắn với metadata file.
+    """
+    # 1. Tạo bản ghi File
     db_file = FileModel(
         file_id=data.file_id,
         filename=data.filename,
@@ -88,9 +93,29 @@ def create_file(
         uploaded_by_user_id=uploaded_by_user_id,
     )
     db.add(db_file)
+
+    # 2. Chuẩn bị owner_id (tạm thời nếu chưa có auth)
+    owner_id = uploaded_by_user_id or 1  # TODO: sau này thay bằng current_user.id
+
+    # 3. Tạo Document đúng theo document_model.py
+    doc = Document(
+        name=data.filename,
+        original_filename=data.filename,
+        file_path=data.path,
+        file_size=data.size,
+        content_type=data.content_type,
+        owner_id=owner_id,
+        # status sẽ dùng default = "pending"
+        # text_content = None (chưa OCR)
+    )
+    db.add(doc)
+
+    # 4. Commit một lần cho cả File + Document
     db.commit()
     db.refresh(db_file)
-    return FileInDB.model_validate(db_file)
+    db.refresh(doc)
+
+    return db_file, doc
 
 
 def get_file_by_file_id(db: Session, file_id: str) -> FileInDB | None:

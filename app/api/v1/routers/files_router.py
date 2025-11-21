@@ -56,7 +56,7 @@ async def upload_file(
         path=meta["path"],
     )
 
-    db_file = create_file(db, file_create)
+    db_file, doc = create_file(db, file_create)
     # db_file = create_file(db, file_create, uploaded_by_user_id=current_user.id)
     # 3. Trả response cho FE (chỉ thông tin cần thiết)
     return UploadedFileResponse(
@@ -65,6 +65,7 @@ async def upload_file(
         content_type=db_file.content_type,
         size=db_file.size,
         url=None,  # sau này có thể build URL download từ file_id
+        document_id=doc.id if doc else None,
     )
 
 

@@ -3,7 +3,6 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -59,21 +58,14 @@ def _do_login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
         )
-    return _issue_tokens(db, user_id=user.id, subject=user.email, request=request)
+    return _issue_tokens(db, user_id=user.id, subject=str(user.id), request=request)
 
 
-@router.post("/login")
-def login(
-    request: Request,
-    form: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
-):
-    return _do_login(
-        db, identifier=form.username, password=form.password, request=request
-    )
-
-
-@router.post("/login-json")
+@router.post(
+    "/login",
+    summary="Login using email or username",
+    description="You can login using either your email or your username.",
+)
 def login_json(body: LoginRequest, request: Request, db: Session = Depends(get_db)):
     return _do_login(db, identifier=body.email, password=body.password, request=request)
 

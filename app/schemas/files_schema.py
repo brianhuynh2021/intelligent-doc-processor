@@ -1,5 +1,6 @@
 # app/schemas/files.py
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -12,6 +13,7 @@ class UploadedFileResponse(BaseModel):
     content_type: str
     size: int
     url: str | None = None
+    document_id: Optional[int] = None
 
 
 # ===== Schema cho DB layer =====

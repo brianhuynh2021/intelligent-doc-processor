@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserCreate(BaseModel):
@@ -26,5 +26,8 @@ class Token(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: str
-    password: str
+    email: str = Field(
+        description="Email or username. You can login with either.",
+        examples=["huynh2102", "huynh2102@gmail.com"],
+    )
+    password: str = Field(examples=["123456"])

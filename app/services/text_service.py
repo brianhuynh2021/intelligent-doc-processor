@@ -1,7 +1,7 @@
 import re
 from typing import List
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 DEFAULT_CHUNK_SIZE = 1000  # ~ 250 tokens
 DEFAULT_CHUNK_OVERLAP = 200  # ~ 20% overlap
@@ -44,3 +44,36 @@ def split_text_into_chunks(
 
     chunks = splitter.split_text(cleaned)
     return chunks
+
+
+def chunk_text(
+    text: str,
+    chunk_size: int = DEFAULT_CHUNK_SIZE,
+    chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
+):
+    """
+    Split text into chunks and also return (start_index, end_index) for each chunk.
+    Output format: List[(chunk_content, start_idx, end_idx)]
+    """
+    cleaned = clean_text(text)
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        separators=["\n\n", "\n", ". ", " ", ""],
+    )
+
+    chunks = splitter.split_text(cleaned)
+
+    result = []
+    search_pos = 0
+    for chunk in chunks:
+        start = cleaned.find(chunk, search_pos)
+        if start == -1:
+            start = search_pos
+        end = start + len(chunk)
+        search_pos = end
+
+        result.append((chunk, start, end))
+
+    return result

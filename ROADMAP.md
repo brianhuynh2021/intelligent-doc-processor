@@ -64,12 +64,12 @@ project/
 - [x] Test với sample invoices/receipts
 
 **Ngày 6: Text Processing & Chunking**
-- [ ] Implement text chunking strategy (RecursiveCharacterTextSplitter)
-- [ ] Tạo chunk overlapping logic
-- [ ] Store chunks với metadata (page number, position)
-- [ ] Implement text cleaning/preprocessing
-- [ ] Test chunking với different chunk sizes
-- [ ] Optimize chunk size cho embeddings
+- [x] Implement text chunking strategy (RecursiveCharacterTextSplitter)
+- [x] Tạo chunk overlapping logic
+- [x] Store chunks với metadata (page number, position)
+- [x] Implement text cleaning/preprocessing
+- [x] Test chunking với different chunk sizes
+- [x] Optimize chunk size cho embeddings
 
 **Ngày 7: Code Review & Documentation**
 - [ ] Refactor code theo clean architecture
