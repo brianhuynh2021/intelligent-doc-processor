@@ -33,6 +33,12 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 class AppSettings(BaseSettings):
     """Application settings"""
 
+    # Vector DB Settings
+    QDRANT_URL: str = os.getenv("QDRANT_URL", "http://qdrant:6333")
+    QDRANT_COLLECTION: str = os.getenv("QDRANT_COLLECTION", "documents")
+    EMBEDDING_DIM: int = int(os.getenv("EMBEDDING_DIM", "1536"))
+    QDRANT_API_KEY: str | None = os.getenv("QDRANT_API_KEY")  # optional
+
     # Project
     PROJECT_NAME: str = os.getenv("APP_NAME", "Intelligent Doc Processor")
     VERSION: str = os.getenv("APP_VERSION", "0.1.0")

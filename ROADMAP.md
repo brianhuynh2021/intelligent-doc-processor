@@ -72,12 +72,12 @@ project/
 - [x] Optimize chunk size cho embeddings
 
 **Ngày 7: Code Review & Documentation**
-- [ ] Refactor code theo clean architecture
-- [ ] Viết docstrings cho all functions
-- [ ] Update README với setup instructions
-- [ ] Create API documentation (Swagger/ReDoc)
-- [ ] Commit clean code lên Git
-- [ ] Plan week 2
+- [x] Refactor code theo clean architecture
+- [x] Viết docstrings cho all functions
+- [x] Update README với setup instructions
+- [x] Create API documentation (Swagger/ReDoc)
+- [x] Commit clean code lên Git
+- [x] Plan week 2
 
 ---
 
