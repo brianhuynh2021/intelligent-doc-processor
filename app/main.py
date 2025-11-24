@@ -5,7 +5,7 @@ from sqlalchemy import text
 from app.api.v1.routers.auth_router import router as auth_router
 from app.api.v1.routers.document_router import router as document_router
 from app.api.v1.routers.files_router import router as files_router
-from app.core.database import engine
+from app.api.v1.routers.health_router import router as health_router
 
 app = FastAPI(
     title="Intelligent Document Processor",
@@ -33,19 +33,6 @@ def root():
     }
 
 
-@api_v1.get("/health", tags=["Health"])
-def health():
-    """Health check"""
-    status = {"app": "healthy"}
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1")).scalar()
-        status["database"] = "connected ✅"
-    except Exception as e:
-        status["database"] = f"failed ❌: {e}"
-    return status
-
-
 @api_v1.get("/info")
 def info():
     return {
@@ -63,5 +50,5 @@ def info():
 api_v1.include_router(auth_router)
 api_v1.include_router(files_router)
 api_v1.include_router(document_router)
-
+api_v1.include_router(health_router)
 app.include_router(api_v1)

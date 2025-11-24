@@ -84,12 +84,12 @@ project/
 ### **Week 2: Vector Store & RAG Foundation** (Ngày 8-14)
 
 **Ngày 8: Vector Database Setup**
-- [ ] Setup Qdrant trong Docker Compose
-- [ ] Tạo Qdrant client service
-- [ ] Define collection schema (vectors + metadata)
-- [ ] Test connection & basic CRUD
-- [ ] Implement error handling
-- [ ] Setup health checks
+- [x] Setup Qdrant trong Docker Compose
+- [x] Tạo Qdrant client service
+- [x] Define collection schema (vectors + metadata)
+- [x] Test connection & basic CRUD
+- [x] Implement error handling
+- [x] Setup health checks
 
 **Ngày 9: Embedding Pipeline**
 - [ ] Setup OpenAI embeddings hoặc sentence-transformers

@@ -1,12 +1,7 @@
 from functools import lru_cache
 
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import (
-    Distance,
-    PayloadSchema,
-    PayloadSchemaType,
-    VectorParams,
-)
+from qdrant_client.http import models as rest
 
 from app.core.config import app_config
 
@@ -14,49 +9,35 @@ from app.core.config import app_config
 @lru_cache
 def get_qdrant_client() -> QdrantClient:
     """
-    Creates and caches a single QdrantClient instance.
-
-    Using LRU cache ensures that:
-    - only one client is created
-    - all modules reuse the same connection
-    - startup time and overhead are minimized
+    Create and cache a single QdrantClient instance.
     """
     return QdrantClient(
         url=app_config.QDRANT_URL,
-        api_key=getattr(app_config, "QDRANT_API_KEY", None),
         timeout=5.0,
     )
 
 
 def ensure_qdrant_collection() -> None:
     """
-    Verify that the configured Qdrant collection exists.
-    If it does not exist, create it with:
-    - correct vector dimension
-    - cosine distance metric
-    - metadata (payload) schema
+    Ensure the Qdrant collection exists with the correct vector configuration.
+    Payload schema sẽ để Qdrant tự xử lý (schemaless), không cần PayloadSchema.
     """
     client = get_qdrant_client()
     collection_name = app_config.QDRANT_COLLECTION
 
-    # Check existing collections
-    existing = [c.name for c in client.get_collections().collections]
-    if collection_name in existing:
-        return  # Already exists, nothing to do
+    try:
+        if client.collection_exists(collection_name):
+            return
+    except Exception:
+        existing = [c.name for c in client.get_collections().collections]
+        if collection_name in existing:
+            return
 
-    # Create new collection with schema
+    # Tạo collection với vector params
     client.create_collection(
         collection_name=collection_name,
-        vectors_config=VectorParams(
+        vectors_config=rest.VectorParams(
             size=app_config.EMBEDDING_DIM,
-            distance=Distance.COSINE,
-        ),
-        payload_schema=PayloadSchema(
-            {
-                "doc_id": PayloadSchemaType.KEYWORD,
-                "page": PayloadSchemaType.INTEGER,
-                "source": PayloadSchemaType.KEYWORD,
-                "workspace_id": PayloadSchemaType.KEYWORD,
-            }
+            distance=rest.Distance.COSINE,
         ),
     )
