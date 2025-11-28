@@ -279,12 +279,6 @@ FLUSHALL         # Clear all (careful!)
     /────────\
 ```
 
-### Current Coverage
-- **Unit Tests**: Coming in Week 3
-- **Integration Tests**: Coming in Week 3
-- **E2E Tests**: Coming in Week 4
-- **Load Tests**: Coming in Week 4
-
 **Target**: >85% code coverage
 
 ---
@@ -336,9 +330,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/intelligent-doc-processor/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/intelligent-doc-processor/discussions)
-- **Email**: your.email@example.com
+- **Issues**: [GitHub Issues](https://github.com/brianhuynh2021/intelligent-doc-processor/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/brianhuynh2021/intelligent-doc-processor/discussions)
+- **Email**: huynh2102@gmail.com
 
 ---
 
@@ -348,12 +342,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **API Docs**: http://localhost:8000/docs
 - **ROADMAP**: [ROADMAP.md](ROADMAP.md)
 - **Changelog**: [CHANGELOG.md](CHANGELOG.md) (coming)
-
----
-
-**Status**: 🟢 Active Development
-**Last Updated**: Day 2 - October 2025
-**Next Milestone**: Complete Day 2 migrations, start Day 3 authentication
 
 ---
 

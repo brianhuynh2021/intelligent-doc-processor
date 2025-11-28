@@ -117,10 +117,13 @@ class AppSettings(BaseSettings):
     REFRESH_COOKIE_SECURE: bool = True
     REFRESH_COOKIE_SAMESITE: str = "lax"
 
+    # Cache Settings
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
     class Config:
         env_file = ".env"
         case_sensitive = True
         extra = "ignore"
 
 
-app_config = AppSettings()
+settings = AppSettings()

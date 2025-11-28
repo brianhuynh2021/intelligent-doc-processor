@@ -92,12 +92,12 @@ project/
 - [x] Setup health checks
 
 **Ngày 9: Embedding Pipeline**
-- [ ] Setup OpenAI embeddings hoặc sentence-transformers
-- [ ] Implement batch embedding service
-- [ ] Tạo embedding cache với Redis
-- [ ] Store embeddings trong Qdrant
-- [ ] Test embedding performance
-- [ ] Benchmark different models (speed vs quality)
+- [x] Setup OpenAI embeddings hoặc sentence-transformers
+- [x] Implement batch embedding service
+- [x] Tạo embedding cache với Redis
+- [x] Store embeddings trong Qdrant
+- [x] Test embedding performance
+- [x] Benchmark different models (speed vs quality)
 
 **Ngày 10: Document Ingestion Pipeline**
 - [ ] Kết nối: Upload → OCR → Chunk → Embed → Store
@@ -1403,67 +1403,6 @@ project/
 - [ ] All content published
 - [ ] Update resume
 - [ ] LinkedIn update
-- [ ] Plan week 24
-
----
-
-### **Week 24: Interview Preparation** (Ngày 162-168)
-
-**Ngày 162: Technical Story Preparation**
-- [ ] STAR method stories
-- [ ] Trade-off decisions
-- [ ] Scaling challenges
-- [ ] Debugging war stories
-- [ ] Team collaboration
-- [ ] Practice delivery
-
-**Ngày 163: System Design Practice**
-- [ ] Mock system design interviews
-- [ ] Draw architecture diagrams
-- [ ] Explain trade-offs
-- [ ] Scale calculations
-- [ ] Practice whiteboarding
-- [ ] Time management
-
-**Ngày 164: Code Deep-Dive Prep**
-- [ ] Explain key algorithms
-- [ ] Design patterns used
-- [ ] Performance optimizations
-- [ ] Code review scenarios
-- [ ] Refactoring examples
-- [ ] Practice explaining
-
-**Ngày 165: Behavioral Preparation**
-- [ ] Leadership examples
-- [ ] Conflict resolution
-- [ ] Innovation stories
-- [ ] Failure & learning
-- [ ] Team impact
-- [ ] Mock interviews
-
-**Ngày 166: Metrics & Impact**
-- [ ] Quantify achievements
-- [ ] Performance improvements
-- [ ] Cost savings
-- [ ] User impact
-- [ ] Business value
-- [ ] Create one-pager
-
-**Ngày 167: Mock Interviews**
-- [ ] Pramp/Interviewing.io
-- [ ] Peer mock interviews
-- [ ] Record & review
-- [ ] Improve weak areas
-- [ ] Build confidence
-- [ ] Final practice
-
-**Ngày 168: Final Preparation**
-- [ ] Review all materials
-- [ ] Update resume
-- [ ] Portfolio live check
-- [ ] Demo environment ready
-- [ ] Questions for interviewers
-- [ ] Ready to apply! 🚀
 
 ---
 
