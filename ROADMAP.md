@@ -100,12 +100,12 @@ project/
 - [x] Benchmark different models (speed vs quality)
 
 **Ngày 10: Document Ingestion Pipeline**
-- [ ] Kết nối: Upload → OCR → Chunk → Embed → Store
-- [ ] Implement pipeline orchestration
-- [ ] Add progress tracking
-- [ ] Error handling & rollback logic
-- [ ] Test end-to-end flow
-- [ ] Measure processing time
+- [x] Kết nối: Upload → OCR → Chunk → Embed → Store
+- [x] Implement pipeline orchestration
+- [x] Add progress tracking
+- [x] Error handling & rollback logic
+- [x] Test end-to-end flow
+- [x] Measure processing time
 
 **Ngày 11: Retrieval Service**
 - [ ] Implement semantic search với Qdrant
