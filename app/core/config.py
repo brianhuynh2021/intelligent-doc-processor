@@ -102,6 +102,7 @@ class AppSettings(BaseSettings):
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "your-openai-api-key-here")
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4")
+    ANTHROPIC_API_KEY: str | None = os.getenv("ANTHROPIC_API_KEY")
     MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "4096"))
 
     # Vector Database (Add these from .env)

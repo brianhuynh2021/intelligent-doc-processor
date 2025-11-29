@@ -108,12 +108,12 @@ project/
 - [x] Measure processing time
 
 **Ngày 11: Retrieval Service**
-- [ ] Implement semantic search với Qdrant
-- [ ] Add metadata filtering (date, document type)
-- [ ] Implement similarity threshold
-- [ ] Reranking strategy (MMR, score-based)
-- [ ] Test retrieval accuracy
-- [ ] Optimize search performance
+- [x] Implement semantic search với Qdrant
+- [x] Add metadata filtering (date, document type)
+- [x] Implement similarity threshold
+- [x] Reranking strategy (MMR, score-based)
+- [x] Test retrieval accuracy
+- [x] Optimize search performance
 
 **Ngày 12: RAG Chat - Part 1**
 - [ ] Setup LangChain/LlamaIndex

@@ -91,10 +91,18 @@ def semantic_search(
     query_vec = embed_with_cache([query])[0]
 
     candidate_limit = fetch_k or max(top_k * 3, top_k)
+
+    filter_payload: Optional[Dict[str, Any]] = None
+    if filters:
+        if hasattr(filters, "dict"):
+            filter_payload = filters.dict(exclude_none=True)  # type: ignore
+        elif isinstance(filters, dict):
+            filter_payload = {k: v for k, v in filters.items() if v is not None}
+
     points: List[ScoredPoint] = search_similar(
         query_vector=query_vec,
         limit=candidate_limit,
-        filter_metadata=filters,
+        filter_metadata=filter_payload,
         score_threshold=score_threshold,
         with_vectors=use_mmr,
         custom_filter=qdrant_filter,

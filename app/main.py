@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.api.v1.routers.auth_router import router as auth_router
+from app.api.v1.routers.chat_router import router as chat_router
 from app.api.v1.routers.document_router import router as document_router
 from app.api.v1.routers.files_router import router as files_router
 from app.api.v1.routers.health_router import router as health_router
@@ -53,4 +54,5 @@ api_v1.include_router(files_router)
 api_v1.include_router(document_router)
 api_v1.include_router(health_router)
 api_v1.include_router(search_router)
+api_v1.include_router(chat_router)
 app.include_router(api_v1)
