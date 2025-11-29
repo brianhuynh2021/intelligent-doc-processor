@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 from pydantic import BaseModel
 
@@ -19,9 +20,12 @@ class DocumentCreate(DocumentBase):
 class DocumentInDB(DocumentBase):
     id: int
     status: str
+    processing_step: str | None = None
+    processing_progress: int
     text_content: str | None = None
     processing_started_at: datetime | None = None
     processing_completed_at: datetime | None = None
+    processing_duration_ms: int | None = None
     error_count: int
     last_error: str | None = None
     download_count: int
@@ -33,3 +37,16 @@ class DocumentInDB(DocumentBase):
 
     class Config:
         from_attributes = True
+
+
+class IngestionStep(BaseModel):
+    name: str
+    duration_ms: int
+    detail: str | None = None
+
+
+class IngestionResponse(BaseModel):
+    document: DocumentInDB
+    total_duration_ms: int
+    chunks_indexed: int
+    steps: List[IngestionStep]

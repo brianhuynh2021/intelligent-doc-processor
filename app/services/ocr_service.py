@@ -2,15 +2,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import List
 
-import pytesseract
-from pdf2image import convert_from_path
-from PIL import Image
+from pypdf import PdfReader
 from sqlalchemy.orm import Session
 
-from app.core.config import POPPLER_PATH, TESSERACT_CMD
 from app.models.document_model import Document
-
-pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
 
 @dataclass
@@ -19,43 +14,27 @@ class PageOcrResult:
     text: str
 
 
-def pdf_to_images(pdf_path: str) -> List[Image.Image]:
-    """
-    Convert một PDF thành list ảnh (mỗi trang là một Image).
-    """
-    images = convert_from_path(
-        pdf_path,
-        dpi=300,
-        poppler_path=POPPLER_PATH,
-    )
-    return images
-
-
-def ocr_image(image: Image.Image, page_number: int) -> PageOcrResult:
-    """
-    Chạy OCR cho một trang ảnh.
-    """
-    text = pytesseract.image_to_string(image, lang="eng+vie")
-    return PageOcrResult(page_number=page_number, text=text)
-
-
 def ocr_pdf_file(pdf_path: str) -> List[PageOcrResult]:
     """
-    Full pipeline: PDF path -> list PageOcrResult (multi-page).
+    Extract text from PDF pages using PyPDF (no OCR for scanned images).
     """
-    images = pdf_to_images(pdf_path)
-    results: List[PageOcrResult] = []
+    reader = PdfReader(pdf_path)
+    page_results: List[PageOcrResult] = []
 
-    for idx, img in enumerate(images, start=1):
-        page_result = ocr_image(img, page_number=idx)
-        results.append(page_result)
+    for idx, page in enumerate(reader.pages, start=1):
+        text = page.extract_text() or ""
+        page_results.append(PageOcrResult(page_number=idx, text=text))
 
-    return results
+    return page_results
 
 
 def process_document_ocr(db: Session, document: Document):
-    document.processing_started_at = datetime.now(timezone.utc)
+    started_at = datetime.now(timezone.utc)
+    document.processing_started_at = started_at
     document.status = "processing"
+    document.processing_step = "ocr"
+    document.processing_progress = 0
+    document.processing_duration_ms = None
     db.commit()
 
     try:
@@ -66,12 +45,22 @@ def process_document_ocr(db: Session, document: Document):
         # Save result
         document.text_content = full_text
         document.status = "completed"
-        document.processing_completed_at = datetime.utcnow()
+        document.processing_progress = 100
+        document.processing_completed_at = datetime.now(timezone.utc)
+        document.processing_duration_ms = int(
+            (document.processing_completed_at - started_at).total_seconds() * 1000
+        )
 
     except Exception as e:
         document.status = "error"
         document.error_count += 1
         document.last_error = str(e)
+        document.processing_progress = document.processing_progress or 0
+        document.processing_step = "error"
+        document.processing_completed_at = datetime.now(timezone.utc)
+        document.processing_duration_ms = int(
+            (document.processing_completed_at - started_at).total_seconds() * 1000
+        )
 
     db.commit()
     db.refresh(document)

@@ -127,3 +127,5 @@ class AppSettings(BaseSettings):
 
 
 settings = AppSettings()
+# Backwards compatibility alias (existing modules import app_config)
+app_config = settings

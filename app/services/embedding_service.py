@@ -2,11 +2,20 @@
 from typing import List
 import os
 
-from .embedding_cache import get_cached_embeddings, set_cached_embeddings
+from app.core.config import settings
 from openai import OpenAI
+from .embedding_cache import get_cached_embeddings, set_cached_embeddings
 
 OPENAI_EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+_client: OpenAI | None = None
+
+
+def _get_client() -> OpenAI:
+    global _client
+    if _client is None:
+        api_key = os.getenv("OPENAI_API_KEY") or settings.OPENAI_API_KEY
+        _client = OpenAI(api_key=api_key)
+    return _client
 
 
 def embed_with_cache(texts: List[str]) -> List[List[float]]:
@@ -20,7 +29,7 @@ def embed_with_cache(texts: List[str]) -> List[List[float]]:
 
     # 3. Gọi OpenAI cho những cái thiếu
     if missing_texts:
-        response = client.embeddings.create(
+        response = _get_client().embeddings.create(
             model=OPENAI_EMBEDDING_MODEL,
             input=missing_texts,
         )

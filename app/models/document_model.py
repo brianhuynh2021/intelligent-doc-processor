@@ -23,8 +23,11 @@ class Document(Base):
 
     # Processing status & metrics
     status = Column(String(50), nullable=False, default=default_status)
+    processing_step = Column(String(50), nullable=True)
+    processing_progress = Column(Integer, nullable=False, default=0)
     processing_started_at = Column(DateTime(timezone=True))
     processing_completed_at = Column(DateTime(timezone=True))
+    processing_duration_ms = Column(Integer, nullable=True)
     error_count = Column(Integer, default=0)
     last_error = Column(Text)
 

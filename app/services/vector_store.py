@@ -14,6 +14,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance,
     Filter,
+    FilterSelector,
     FieldCondition,
     MatchValue,
     PointStruct,
@@ -132,3 +133,23 @@ def search_similar(
     )
 
     return search_result
+
+
+def delete_embeddings_by_logical_ids(logical_ids: List[str]) -> None:
+    """
+    Remove points from the collection by their logical IDs (stored in payload).
+    """
+    if not logical_ids:
+        return
+
+    conditions = [
+        FieldCondition(key="logical_id", match=MatchValue(value=lid))
+        for lid in logical_ids
+    ]
+    selector = FilterSelector(filter=Filter(should=conditions))
+
+    qdrant_client.delete(
+        collection_name=COLLECTION_NAME,
+        points_selector=selector,
+        wait=True,
+    )

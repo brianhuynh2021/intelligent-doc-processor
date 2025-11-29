@@ -51,8 +51,6 @@ def chunk_document(
             page_number=None,
             char_count=len(content),
             token_count=None,
-            char_start=start,
-            char_end=end,
         )
         db.add(c)
         db_chunks.append(c)

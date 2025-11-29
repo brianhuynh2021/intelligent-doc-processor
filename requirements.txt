@@ -68,6 +68,7 @@ pillow==12.0.0
 platformdirs==4.5.0
 pluggy==1.6.0
 portalocker==2.10.1
+pypdf==5.2.0
 pre-commit==3.5.0
 protobuf==6.33.1
 psycopg2-binary==2.9.9
