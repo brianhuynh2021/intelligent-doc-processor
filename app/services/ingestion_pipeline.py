@@ -299,6 +299,13 @@ class DocumentIngestionPipeline:
             "page": page,
             "document_id": document.id,
             "document_owner_id": owner_id,
+            "content_type": document.content_type,
+            "document_created_at": document.created_at.isoformat()
+            if document.created_at
+            else None,
+            "document_created_at_ts": int(document.created_at.timestamp())
+            if document.created_at
+            else None,
         }
 
     @staticmethod

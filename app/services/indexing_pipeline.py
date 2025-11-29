@@ -48,7 +48,9 @@ def index_chunks(
             "owner_id": c.get("document_owner_id") or c.get("owner_id"),
             "page": c.get("page"),
             "chunk_index": c.get("chunk_index"),
-            # you can add more fields if needed
+            "content_type": c.get("content_type"),
+            "document_created_at": c.get("document_created_at"),
+            "document_created_at_ts": c.get("document_created_at_ts"),
             "text": c["text"],
         }
         metadatas.append(metadata)

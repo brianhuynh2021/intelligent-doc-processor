@@ -99,6 +99,9 @@ def search_similar(
     query_vector: List[float],
     limit: int = 5,
     filter_metadata: Optional[Dict[str, Any]] = None,
+    score_threshold: Optional[float] = None,
+    with_vectors: bool = False,
+    custom_filter: Optional[Filter] = None,
 ):
     """
     Search for the most similar documents given a query vector.
@@ -106,14 +109,16 @@ def search_similar(
     - query_vector: embedding of the query text
     - limit: maximum number of results to return
     - filter_metadata: optional filtering on payload, e.g. {"file_id": "..."}
+    - score_threshold: filter out results below this score (cosine similarity)
+    - with_vectors: include stored vectors in the response (needed for MMR)
     """
     if not query_vector:
         return []
 
-    qdrant_filter: Optional[Filter] = None
+    qdrant_filter: Optional[Filter] = custom_filter
 
     # Build Qdrant filter from simple "field == value" conditions
-    if filter_metadata:
+    if filter_metadata and qdrant_filter is None:
         conditions = []
         for field, value in filter_metadata.items():
             conditions.append(
@@ -130,6 +135,8 @@ def search_similar(
         query_vector=query_vector,
         limit=limit,
         query_filter=qdrant_filter,
+        score_threshold=score_threshold,
+        with_vectors=with_vectors,
     )
 
     return search_result
