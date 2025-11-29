@@ -116,28 +116,28 @@ project/
 - [x] Optimize search performance
 
 **Ngày 12: RAG Chat - Part 1**
-- [ ] Setup LangChain/LlamaIndex
-- [ ] Implement basic QA chain
-- [ ] Tạo prompt templates
-- [ ] Integrate với OpenAI/Claude
-- [ ] Test với sample questions
-- [ ] Handle context length limits
+- [x] Setup LangChain/LlamaIndex
+- [x] Implement basic QA chain
+- [x] Tạo prompt templates
+- [x] Integrate với OpenAI/Claude
+- [x] Test với sample questions
+- [x] Handle context length limits
 
 **Ngày 13: RAG Chat - Part 2**
-- [ ] Implement conversation memory
-- [ ] Add chat history tracking
-- [ ] Create session management
-- [ ] Implement streaming responses
-- [ ] Test multi-turn conversations
-- [ ] Optimize response latency
+- [x] Implement conversation memory
+- [x] Add chat history tracking
+- [x] Create session management
+- [x] Implement streaming responses
+- [x] Test multi-turn conversations
+- [x] Optimize response latency
 
 **Ngày 14: Week 2 Review & Testing**
-- [ ] Integration tests cho full pipeline
-- [ ] Load testing với multiple documents
-- [ ] Fix bugs & optimize bottlenecks
-- [ ] Update documentation
-- [ ] Create demo notebook
-- [ ] Deploy local MVP
+- [x] Integration tests cho full pipeline
+- [x] Load testing với multiple documents
+- [x] Fix bugs & optimize bottlenecks
+- [x] Update documentation
+- [x] Create demo notebook
+- [x] Deploy local MVP
 
 ---
 

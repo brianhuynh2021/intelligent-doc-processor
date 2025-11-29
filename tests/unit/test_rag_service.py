@@ -19,7 +19,7 @@ def test_answer_question_uses_openai(monkeypatch):
     )
     called = {}
 
-    def fake_openai(model_name, messages):
+    def fake_openai(model_name, messages, stream=False):
         called["model"] = model_name
         called["messages"] = messages
         return "openai answer"

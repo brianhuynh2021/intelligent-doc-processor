@@ -14,6 +14,9 @@ class ChatRequest(BaseModel):
     max_context_chars: int = Field(6000, ge=500, le=20000)
     model: Optional[str] = None  # override default LLM model
     filters: Optional[SearchFilter] = None
+    session_id: Optional[int] = None
+    stream: bool = False
+    max_history_messages: int = Field(10, ge=0, le=50)
 
 
 class ContextChunk(BaseModel):
@@ -26,3 +29,5 @@ class ChatResponse(BaseModel):
     answer: str
     model: str
     contexts: List[ContextChunk]
+    session_id: int
+    session_key: str
