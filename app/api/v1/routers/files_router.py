@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-# from app.core.auth import get_current_user #noqa: f401
+from app.core.auth import get_current_user  # noqa: F401
 from app.core.database import get_db
 
-# from app.models.user_model import User #noqa: f401
+from app.models.user_model import User  # noqa: F401
 from app.schemas.files_schema import (
     FileCreate,
     FileDeleteResponse,
@@ -22,7 +22,7 @@ from app.services.file_service import (
 router = APIRouter(
     prefix="/files",
     tags=["files"],
-    # dependencies=Depends(get_current_user)
+    dependencies=[Depends(get_current_user)],
 )
 
 
@@ -34,7 +34,7 @@ router = APIRouter(
 async def upload_file(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    # current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Upload a single file via multipart/form-data.
@@ -56,8 +56,7 @@ async def upload_file(
         path=meta["path"],
     )
 
-    db_file, doc = create_file(db, file_create)
-    # db_file = create_file(db, file_create, uploaded_by_user_id=current_user.id)
+    db_file, doc = create_file(db, file_create, uploaded_by_user_id=current_user.id)
     # 3. Trả response cho FE (chỉ thông tin cần thiết)
     return UploadedFileResponse(
         file_id=db_file.file_id,

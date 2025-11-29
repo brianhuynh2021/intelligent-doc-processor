@@ -2,27 +2,37 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db, SessionLocal
 from app.schemas.chat_schema import ChatRequest, ChatResponse, ContextChunk
 from app.schemas.chat_session_schema import ChatMessageResponse, ChatSessionCreate, ChatSessionResponse
 from app.services import chat_service
 from app.services.rag_service import answer_question, stream_answer
 
-router = APIRouter(prefix="/chat", tags=["chat"])
+router = APIRouter(prefix="/chat", tags=["chat"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/sessions", response_model=ChatSessionResponse)
-def create_session(body: ChatSessionCreate, db: Session = Depends(get_db)):
+def create_session(
+    body: ChatSessionCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     session = chat_service.create_session(
         db=db,
         name=body.name,
-        created_by_user_id=body.created_by_user_id,
+        created_by_user_id=body.created_by_user_id or current_user.id,
     )
     return session
 
 
 @router.get("/sessions/{session_id}/messages", response_model=list[ChatMessageResponse])
-def list_messages(session_id: int, db: Session = Depends(get_db), limit: int = 20):
+def list_messages(
+    session_id: int,
+    db: Session = Depends(get_db),
+    limit: int = 20,
+    current_user=Depends(get_current_user),
+):
     session = chat_service.get_session_by_id(db, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -35,6 +45,7 @@ def get_history(
     session_id: int = Query(..., description="Session ID"),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     session = chat_service.get_session_by_id(db, session_id)
     if not session:
@@ -43,7 +54,7 @@ def get_history(
 
 
 @router.post("/ask", response_model=ChatResponse)
-def ask_question(body: ChatRequest, db: Session = Depends(get_db)):
+def ask_question(body: ChatRequest, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     # Ensure session
     session = None
     if body.session_id:
@@ -51,7 +62,7 @@ def ask_question(body: ChatRequest, db: Session = Depends(get_db)):
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
     else:
-        session = chat_service.create_session(db=db)
+        session = chat_service.create_session(db=db, created_by_user_id=current_user.id)
 
     history = chat_service.get_messages(
         db=db,

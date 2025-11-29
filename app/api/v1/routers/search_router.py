@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from qdrant_client.models import FieldCondition, Filter, MatchValue, Range
 
+from app.core.auth import get_current_user
 from app.schemas.search_schema import (
     SearchFilter,
     SearchRequest,
@@ -9,7 +10,7 @@ from app.schemas.search_schema import (
 )
 from app.services.retrieval_service import semantic_search
 
-router = APIRouter(prefix="/search", tags=["search"])
+router = APIRouter(prefix="/search", tags=["search"], dependencies=[Depends(get_current_user)])
 
 
 def build_qdrant_filter(filter_obj: SearchFilter | None) -> Filter | None:

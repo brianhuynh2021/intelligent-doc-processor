@@ -8,6 +8,7 @@ from app.core.database import get_db
 from app.models import Base
 from app.services import rag_service
 from app.services.retrieval_service import RetrievalHit
+from app.core.auth import get_current_user
 
 
 @pytest.fixture(scope="module")
@@ -30,6 +31,7 @@ def test_db():
             db.close()
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = lambda: type("U", (), {"id": 1})()
     yield TestingSessionLocal
     app.dependency_overrides.clear()
 

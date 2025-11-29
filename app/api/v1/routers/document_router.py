@@ -4,6 +4,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.models.document_model import Document
 from app.schemas.chunk_schema import ChunkInDB
@@ -25,6 +26,7 @@ def list_documents(
     db: Session = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    current_user=Depends(get_current_user),
 ):
     query = db.query(Document).filter(Document.is_deleted.is_(False))
     total = query.count()
@@ -39,6 +41,7 @@ def list_documents(
 def get_document(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     doc = (
         db.query(Document)
@@ -54,6 +57,7 @@ def get_document(
 def delete_document(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     doc = (
         db.query(Document)
@@ -75,6 +79,7 @@ def delete_document(
 def run_document_ocr(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     doc = (
         db.query(Document)
@@ -95,6 +100,7 @@ def run_document_chunk(
     db: Session = Depends(get_db),
     chunk_size: int = Query(1000, ge=200, le=4000),
     chunk_overlap: int = Query(200, ge=0, le=1000),
+    current_user=Depends(get_current_user),
 ):
     doc = (
         db.query(Document)
@@ -126,6 +132,7 @@ def run_document_ingestion(
     db: Session = Depends(get_db),
     chunk_size: int = Query(1000, ge=200, le=4000),
     chunk_overlap: int = Query(200, ge=0, le=1000),
+    current_user=Depends(get_current_user),
 ):
     """
     End-to-end ingestion: OCR -> chunk -> embed -> store.
