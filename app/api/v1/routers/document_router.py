@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -8,6 +9,7 @@ from app.models.document_model import Document
 from app.schemas.chunk_schema import ChunkInDB
 from app.schemas.document_schema import (
     DocumentInDB,
+    DocumentListResponse,
     IngestionResponse,
     IngestionStep,
 )
@@ -16,6 +18,57 @@ from app.services.ingestion_pipeline import DocumentIngestionPipeline
 from app.services.ocr_service import process_document_ocr
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+@router.get("", response_model=DocumentListResponse)
+def list_documents(
+    db: Session = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+):
+    query = db.query(Document).filter(Document.is_deleted.is_(False))
+    total = query.count()
+    docs = query.order_by(Document.created_at.desc()).offset(skip).limit(limit).all()
+    return DocumentListResponse(
+        items=[DocumentInDB.model_validate(d) for d in docs],
+        total=total,
+    )
+
+
+@router.get("/{document_id}", response_model=DocumentInDB)
+def get_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+):
+    doc = (
+        db.query(Document)
+        .filter(Document.id == document_id, Document.is_deleted.is_(False))
+        .first()
+    )
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return DocumentInDB.model_validate(doc)
+
+
+@router.delete("/{document_id}", response_model=DocumentInDB)
+def delete_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+):
+    doc = (
+        db.query(Document)
+        .filter(Document.id == document_id, Document.is_deleted.is_(False))
+        .first()
+    )
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    doc.is_deleted = True
+    doc.status = "deleted"
+    doc.deleted_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(doc)
+    return DocumentInDB.model_validate(doc)
 
 
 @router.post("/{document_id}/ocr", response_model=DocumentInDB)

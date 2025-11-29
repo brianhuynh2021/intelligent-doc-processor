@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
+from app.core.database import get_db, SessionLocal
 from app.schemas.chat_schema import ChatRequest, ChatResponse, ContextChunk
 from app.schemas.chat_session_schema import ChatMessageResponse, ChatSessionCreate, ChatSessionResponse
 from app.services import chat_service
@@ -28,6 +28,18 @@ def list_messages(session_id: int, db: Session = Depends(get_db), limit: int = 2
         raise HTTPException(status_code=404, detail="Session not found")
     messages = chat_service.get_messages(db, session_id=session_id, limit=limit)
     return messages
+
+
+@router.get("/history", response_model=list[ChatMessageResponse])
+def get_history(
+    session_id: int = Query(..., description="Session ID"),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    session = chat_service.get_session_by_id(db, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return chat_service.get_messages(db, session_id=session_id, limit=limit)
 
 
 @router.post("/ask", response_model=ChatResponse)
@@ -122,3 +134,74 @@ def ask_question(body: ChatRequest, db: Session = Depends(get_db)):
         session_id=session.id,
         session_key=session.session_key,
     )
+
+
+@router.post("", response_model=ChatResponse)
+def chat_alias(body: ChatRequest, db: Session = Depends(get_db)):
+    """Alias for /chat/ask"""
+    return ask_question(body=body, db=db)
+
+
+@router.websocket("/ws")
+async def chat_websocket(
+    websocket: WebSocket,
+    session_id: int | None = None,
+    top_k: int = 4,
+    score_threshold: float | None = None,
+    use_mmr: bool = True,
+    mmr_lambda: float = 0.5,
+    max_context_chars: int = 4000,
+    model: str | None = None,
+    max_history_messages: int = 10,
+):
+    await websocket.accept()
+    db = SessionLocal()
+    try:
+        session = None
+        if session_id:
+            session = chat_service.get_session_by_id(db, session_id)
+        if not session:
+            session = chat_service.create_session(db=db)
+
+        while True:
+            try:
+                text = await websocket.receive_text()
+            except WebSocketDisconnect:
+                break
+
+            history = chat_service.get_messages(db, session_id=session.id, limit=max_history_messages)
+
+            stream_or_answer, contexts, model_name = stream_answer(
+                question=text,
+                top_k=top_k,
+                score_threshold=score_threshold,
+                use_mmr=use_mmr,
+                mmr_lambda=mmr_lambda,
+                max_context_chars=max_context_chars,
+                model=model,
+                filters=None,
+                history=history,
+                max_history_messages=max_history_messages,
+            )
+
+            chat_service.add_message(db, session.id, "user", text)
+
+            if isinstance(stream_or_answer, str):
+                chat_service.add_message(db, session.id, "assistant", stream_or_answer)
+                await websocket.send_text(stream_or_answer)
+                continue
+
+            collected = []
+            async for token in _async_iter(stream_or_answer):
+                collected.append(token)
+                await websocket.send_text(token)
+            full_answer = "".join(collected)
+            chat_service.add_message(db, session.id, "assistant", full_answer)
+
+    finally:
+        db.close()
+
+
+async def _async_iter(gen):
+    for item in gen:
+        yield item

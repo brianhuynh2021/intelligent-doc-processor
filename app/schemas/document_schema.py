@@ -39,6 +39,11 @@ class DocumentInDB(DocumentBase):
         from_attributes = True
 
 
+class DocumentListResponse(BaseModel):
+    items: list[DocumentInDB]
+    total: int
+
+
 class IngestionStep(BaseModel):
     name: str
     duration_ms: int
