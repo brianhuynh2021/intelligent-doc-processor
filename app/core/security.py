@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from jose import jwt
 from passlib.context import CryptContext
 
-from app.core.config import app_config
+from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
@@ -36,7 +36,7 @@ def create_access_token(
     """
     now = datetime.now(timezone.utc)
     expire = now + timedelta(
-        minutes=expires_minutes or app_config.ACCESS_TOKEN_EXPIRE_MINUTES
+        minutes=expires_minutes or settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
 
     payload: Dict[str, Any] = {
@@ -51,11 +51,15 @@ def create_access_token(
         payload.update(extra)
 
     return jwt.encode(
-        payload, app_config.JWT_SECRET_KEY, algorithm=app_config.JWT_ALGORITHM
+        payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )
 
 
 def decode_token(token: str) -> dict:
     return jwt.decode(
-        token, app_config.JWT_SECRET_KEY, algorithms=[app_config.JWT_ALGORITHM]
+        token,
+        settings.JWT_SECRET_KEY,
+        algorithms=[settings.JWT_ALGORITHM],
+        audience="intelligent-doc-client",
+        issuer="intelligent-doc-processor",
     )

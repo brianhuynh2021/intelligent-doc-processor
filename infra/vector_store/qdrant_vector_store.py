@@ -10,7 +10,7 @@ from qdrant_client.http.models import (
     PointStruct,
 )
 
-from app.core.config import app_config
+from app.core.config import settings
 from infra.vector_store.interfaces import VectorStore
 from infra.vector_store.qdrant_client import ensure_qdrant_collection, get_qdrant_client
 
@@ -35,7 +35,7 @@ class QdrantVectorStore(VectorStore):
         # Ensure collection exists when the store is initialized
         ensure_qdrant_collection()
         self.client = get_qdrant_client()
-        self.collection = app_config.QDRANT_COLLECTION
+        self.collection = settings.QDRANT_COLLECTION
 
     def upsert(
         self,

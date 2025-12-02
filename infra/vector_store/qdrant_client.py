@@ -3,7 +3,7 @@ from functools import lru_cache
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as rest
 
-from app.core.config import app_config
+from app.core.config import settings
 
 
 @lru_cache
@@ -12,7 +12,7 @@ def get_qdrant_client() -> QdrantClient:
     Create and cache a single QdrantClient instance.
     """
     return QdrantClient(
-        url=app_config.QDRANT_URL,
+        url=settings.QDRANT_URL,
         timeout=5.0,
     )
 
@@ -23,7 +23,7 @@ def ensure_qdrant_collection() -> None:
     Payload schema sẽ để Qdrant tự xử lý (schemaless), không cần PayloadSchema.
     """
     client = get_qdrant_client()
-    collection_name = app_config.QDRANT_COLLECTION
+    collection_name = settings.QDRANT_COLLECTION
 
     try:
         if client.collection_exists(collection_name):
@@ -37,7 +37,7 @@ def ensure_qdrant_collection() -> None:
     client.create_collection(
         collection_name=collection_name,
         vectors_config=rest.VectorParams(
-            size=app_config.EMBEDDING_DIM,
+            size=settings.EMBEDDING_DIM,
             distance=rest.Distance.COSINE,
         ),
     )

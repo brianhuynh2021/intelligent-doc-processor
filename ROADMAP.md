@@ -144,12 +144,12 @@ project/
 ### **Week 3: API Enhancement & Error Handling** (Ngày 15-21)
 
 **Ngày 15: Advanced API Endpoints**
-- [ ] GET /documents (list với pagination)
-- [ ] GET /documents/{id} (detail)
-- [ ] DELETE /documents/{id}
-- [ ] POST /chat (chat endpoint)
-- [ ] GET /chat/history
-- [ ] WebSocket cho real-time chat
+- [x] GET /documents (list với pagination)
+- [x] GET /documents/{id} (detail)
+- [x] DELETE /documents/{id}
+- [x] POST /chat (chat endpoint)
+- [x] GET /chat/history
+- [x] WebSocket cho real-time chat
 
 **Ngày 16: Request Validation & Error Handling**
 - [ ] Advanced Pydantic schemas với validation

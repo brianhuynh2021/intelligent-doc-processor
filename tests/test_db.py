@@ -11,7 +11,7 @@ from typing import Any, Optional
 
 from sqlalchemy import text
 
-from app.core.config import app_config
+from app.core.config import settings
 from app.core.database import SessionLocal, check_db_connection, engine
 from app.models.chunk_model import Chunk
 from app.models.document_model import Document
@@ -135,11 +135,11 @@ def print_config():
     """Print database configuration"""
     # ✅ FIXED: Use fields that actually exist in your config
     config_items = [
-        ("Project", app_config.PROJECT_NAME),
-        ("Version", app_config.VERSION),
-        ("Environment", app_config.ENVIRONMENT),
-        ("Database URL", f"{app_config.get_db_url[:60]}..."),
-        ("Debug Mode", app_config.DEBUG),
+        ("Project", settings.PROJECT_NAME),
+        ("Version", settings.VERSION),
+        ("Environment", settings.ENVIRONMENT),
+        ("Database URL", f"{settings.get_db_url[:60]}..."),
+        ("Debug Mode", settings.DEBUG),
     ]
 
     for label, value in config_items:

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.config import app_config
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_access_token, verify_password
 from app.repositories.refresh_token_repository import RefreshTokenRepository
@@ -45,7 +45,7 @@ def _issue_tokens(
         "access_token": access_token,
         "refresh_token": raw_token,
         "token_type": "bearer",
-        "expires_in": app_config.ACCESS_TOKEN_EXPIRE_MINUTES,
+        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES,
     }
 
 

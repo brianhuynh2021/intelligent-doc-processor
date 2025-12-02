@@ -4,17 +4,17 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool  # noqa: F401
 
-from app.core.config import app_config
+from app.core.config import settings
 
 engine = create_engine(
-    app_config.get_db_url,
-    echo=app_config.DEBUG,
+    settings.get_db_url,
+    echo=settings.DEBUG,
     pool_pre_ping=True,
-    pool_size=app_config.DATABASE_POOL_SIZE,
-    max_overflow=app_config.DATABASE_MAX_OVERFLOW,
+    pool_size=settings.DATABASE_POOL_SIZE,
+    max_overflow=settings.DATABASE_MAX_OVERFLOW,
     pool_recycle=3600,
     # For production with pgbouncer, use NullPool:
-    # poolclass=NullPool if app_config.ENVIRONMENT == "production" else None
+    # poolclass=NullPool if settings.ENVIRONMENT == "production" else None
 )
 
 # Create SessionLocal class

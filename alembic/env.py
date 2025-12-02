@@ -5,7 +5,7 @@ from pathlib import Path
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-from app.core.config import app_config
+from app.core.config import settings
 from app.models import Base, Chunk, Document, File, User, ChatSession, ChatMessage  # noqa: F401
 
 project_root = Path(__file__).parent.parent
@@ -16,7 +16,7 @@ sys.path.insert(0, str(project_root))
 config = context.config
 
 # Override DB URL from settings
-config.set_main_option("sqlalchemy.url", app_config.get_db_url)
+config.set_main_option("sqlalchemy.url", settings.get_db_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
