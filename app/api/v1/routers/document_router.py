@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
+from app.core.errors import NotFoundError
 from app.models.document_model import Document
 from app.schemas.chunk_schema import ChunkInDB
 from app.schemas.document_schema import (
@@ -146,9 +147,7 @@ def run_document_ingestion(
             chunk_overlap=chunk_overlap,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise NotFoundError(str(exc))
 
     return IngestionResponse(
         document=DocumentInDB.model_validate(result.document),

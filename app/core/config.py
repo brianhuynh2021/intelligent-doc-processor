@@ -113,6 +113,15 @@ class AppSettings(BaseSettings):
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     LOG_FORMAT: str = os.getenv("LOG_FORMAT", "json")
 
+    # Retries
+    RETRY_MAX_ATTEMPTS: int = int(os.getenv("RETRY_MAX_ATTEMPTS", "3"))
+    RETRY_MIN_BACKOFF_SECONDS: float = float(
+        os.getenv("RETRY_MIN_BACKOFF_SECONDS", "0.5")
+    )
+    RETRY_MAX_BACKOFF_SECONDS: float = float(
+        os.getenv("RETRY_MAX_BACKOFF_SECONDS", "8")
+    )
+
     REFRESH_TOKEN_EXPIRE_DAYS: int = 14
     REFRESH_COOKIE_NAME: str = "rt"
     REFRESH_COOKIE_SECURE: bool = True
@@ -128,4 +137,3 @@ class AppSettings(BaseSettings):
 
 
 settings = AppSettings()
-

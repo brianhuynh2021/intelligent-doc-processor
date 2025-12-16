@@ -1,7 +1,11 @@
-from fastapi import APIRouter, HTTPException, Depends
-from qdrant_client.models import FieldCondition, Filter, MatchValue, Range
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from fastapi import APIRouter, Depends
 
 from app.core.auth import get_current_user
+from app.core.errors import DependencyMissingError
 from app.schemas.search_schema import (
     SearchFilter,
     SearchRequest,
@@ -10,12 +14,30 @@ from app.schemas.search_schema import (
 )
 from app.services.retrieval_service import semantic_search
 
-router = APIRouter(prefix="/search", tags=["search"], dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    prefix="/search", tags=["search"], dependencies=[Depends(get_current_user)]
+)
+
+if TYPE_CHECKING:  # pragma: no cover
+    from qdrant_client.models import Filter
 
 
-def build_qdrant_filter(filter_obj: SearchFilter | None) -> Filter | None:
+def build_qdrant_filter(filter_obj: SearchFilter | None) -> "Filter | None":
     if filter_obj is None:
         return None
+
+    try:
+        from qdrant_client.models import (  # type: ignore
+            FieldCondition,
+            Filter,
+            MatchValue,
+            Range,
+        )
+    except ModuleNotFoundError as exc:
+        raise DependencyMissingError(
+            "qdrant-client is required for search filters",
+            details=[{"dependency": "qdrant-client"}],
+        ) from exc
 
     conditions = []
     if filter_obj.document_id is not None:
@@ -61,19 +83,16 @@ def build_qdrant_filter(filter_obj: SearchFilter | None) -> Filter | None:
 
 @router.post("", response_model=SearchResponse)
 def semantic_search_endpoint(body: SearchRequest):
-    try:
-        qdrant_filter = build_qdrant_filter(body.filters)
-        result = semantic_search(
-            query=body.query,
-            top_k=body.top_k,
-            fetch_k=body.fetch_k,
-            score_threshold=body.score_threshold,
-            use_mmr=body.use_mmr,
-            mmr_lambda=body.mmr_lambda,
-            qdrant_filter=qdrant_filter,
-        )
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    qdrant_filter = build_qdrant_filter(body.filters)
+    result = semantic_search(
+        query=body.query,
+        top_k=body.top_k,
+        fetch_k=body.fetch_k,
+        score_threshold=body.score_threshold,
+        use_mmr=body.use_mmr,
+        mmr_lambda=body.mmr_lambda,
+        qdrant_filter=qdrant_filter,
+    )
 
     return SearchResponse(
         results=[

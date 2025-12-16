@@ -1,12 +1,12 @@
+from __future__ import annotations
+
 from fastapi import APIRouter
-from app.core.database import engine
 from sqlalchemy import text
 
-from infra.vector_store.qdrant_vector_store import QdrantVectorStore
-
-qdrant_store = QdrantVectorStore()
+from app.core.database import engine
 
 router = APIRouter()
+
 
 @router.get("/health", tags=["Health"])
 def health():
@@ -20,10 +20,17 @@ def health():
         status["database"] = f"failed ❌: {e}"
     return status
 
+
 @router.get("/health/qdrant", tags=["Health"])
 def qdrant_health():
     """Qdrant health check only"""
     try:
+        from infra.vector_store.qdrant_vector_store import QdrantVectorStore
+    except ModuleNotFoundError as e:
+        return {"qdrant": f"dependency missing ❌: {e}"}
+
+    try:
+        qdrant_store = QdrantVectorStore()
         if qdrant_store.ping():
             return {"qdrant": "connected ✅"}
         return {"qdrant": "unhealthy ❌"}

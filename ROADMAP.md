@@ -152,12 +152,12 @@ project/
 - [x] WebSocket cho real-time chat
 
 **Ngày 16: Request Validation & Error Handling**
-- [ ] Advanced Pydantic schemas với validation
-- [ ] Custom exception handlers
-- [ ] Implement retry logic với tenacity
-- [ ] Structured error responses
-- [ ] Logging strategy (structlog)
-- [ ] Test error scenarios
+- [x] Advanced Pydantic schemas với validation
+- [x] Custom exception handlers
+- [x] Implement retry logic với tenacity
+- [x] Structured error responses
+- [x] Logging strategy (structlog)
+- [x] Test error scenarios
 
 **Ngày 17: Rate Limiting & Security**
 - [ ] Implement rate limiting (slowapi)
