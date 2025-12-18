@@ -1,15 +1,30 @@
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Query
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
-from app.core.database import get_db, SessionLocal
+from app.core.database import SessionLocal, get_db
+from app.core.logging import get_logger
 from app.schemas.chat_schema import ChatRequest, ChatResponse, ContextChunk
-from app.schemas.chat_session_schema import ChatMessageResponse, ChatSessionCreate, ChatSessionResponse
+from app.schemas.chat_session_schema import (
+    ChatMessageResponse,
+    ChatSessionCreate,
+    ChatSessionResponse,
+)
 from app.services import chat_service
 from app.services.rag_service import answer_question, stream_answer
 
-router = APIRouter(prefix="/chat", tags=["chat"], dependencies=[Depends(get_current_user)])
+router = APIRouter(
+    prefix="/chat", tags=["chat"], dependencies=[Depends(get_current_user)]
+)
+logger = get_logger(__name__)
 
 
 @router.post("/sessions", response_model=ChatSessionResponse)
@@ -54,7 +69,11 @@ def get_history(
 
 
 @router.post("/ask", response_model=ChatResponse)
-def ask_question(body: ChatRequest, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def ask_question(
+    body: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     # Ensure session
     session = None
     if body.session_id:
@@ -70,49 +89,8 @@ def ask_question(body: ChatRequest, db: Session = Depends(get_db), current_user=
         limit=body.max_history_messages,
     )
 
-    try:
-        if body.stream:
-            stream_or_answer, contexts, model_name = stream_answer(
-                question=body.question,
-                top_k=body.top_k,
-                score_threshold=body.score_threshold,
-                use_mmr=body.use_mmr,
-                mmr_lambda=body.mmr_lambda,
-                max_context_chars=body.max_context_chars,
-                model=body.model,
-                filters=body.filters,
-                history=history,
-                max_history_messages=body.max_history_messages,
-            )
-
-            # stream_or_answer is generator for OpenAI; string for Claude fallback
-            if isinstance(stream_or_answer, str):
-                answer_text = stream_or_answer
-                chat_service.add_message(db, session.id, "user", body.question)
-                chat_service.add_message(db, session.id, "assistant", answer_text)
-                return ChatResponse(
-                    answer=answer_text,
-                    model=model_name,
-                    contexts=[
-                        ContextChunk(text=hit.text or "", score=hit.score, metadata=hit.payload)
-                        for hit in contexts
-                    ],
-                    session_id=session.id,
-                    session_key=session.session_key,
-                )
-
-            def token_stream():
-                chat_service.add_message(db, session.id, "user", body.question)
-                collected = []
-                for token in stream_or_answer:
-                    collected.append(token)
-                    yield token
-                full_answer = "".join(collected)
-                chat_service.add_message(db, session.id, "assistant", full_answer)
-
-            return StreamingResponse(token_stream(), media_type="text/plain")
-
-        answer, contexts, model_name = answer_question(
+    if body.stream:
+        stream_or_answer, contexts, model_name = stream_answer(
             question=body.question,
             top_k=body.top_k,
             score_threshold=body.score_threshold,
@@ -124,8 +102,54 @@ def ask_question(body: ChatRequest, db: Session = Depends(get_db), current_user=
             history=history,
             max_history_messages=body.max_history_messages,
         )
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+
+        # stream_or_answer is generator for OpenAI; string for Claude fallback
+        if isinstance(stream_or_answer, str):
+            answer_text = stream_or_answer
+            chat_service.add_message(db, session.id, "user", body.question)
+            chat_service.add_message(db, session.id, "assistant", answer_text)
+            return ChatResponse(
+                answer=answer_text,
+                model=model_name,
+                contexts=[
+                    ContextChunk(
+                        text=hit.text or "", score=hit.score, metadata=hit.payload
+                    )
+                    for hit in contexts
+                ],
+                session_id=session.id,
+                session_key=session.session_key,
+            )
+
+        def token_stream():
+            chat_service.add_message(db, session.id, "user", body.question)
+            collected = []
+            try:
+                for token in stream_or_answer:
+                    collected.append(token)
+                    yield token
+            except Exception:
+                logger.exception("chat_stream_failed", session_id=session.id)
+                raise
+            finally:
+                if collected:
+                    full_answer = "".join(collected)
+                    chat_service.add_message(db, session.id, "assistant", full_answer)
+
+        return StreamingResponse(token_stream(), media_type="text/plain")
+
+    answer, contexts, model_name = answer_question(
+        question=body.question,
+        top_k=body.top_k,
+        score_threshold=body.score_threshold,
+        use_mmr=body.use_mmr,
+        mmr_lambda=body.mmr_lambda,
+        max_context_chars=body.max_context_chars,
+        model=body.model,
+        filters=body.filters,
+        history=history,
+        max_history_messages=body.max_history_messages,
+    )
 
     # persist
     chat_service.add_message(db, session.id, "user", body.question)
@@ -180,7 +204,9 @@ async def chat_websocket(
             except WebSocketDisconnect:
                 break
 
-            history = chat_service.get_messages(db, session_id=session.id, limit=max_history_messages)
+            history = chat_service.get_messages(
+                db, session_id=session.id, limit=max_history_messages
+            )
 
             stream_or_answer, contexts, model_name = stream_answer(
                 question=text,

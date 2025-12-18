@@ -7,29 +7,65 @@ This module is responsible for:
 - Searching similar vectors for retrieval
 """
 
-from typing import Any, Dict, List, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import uuid4
 
-from qdrant_client import QdrantClient
-from qdrant_client.models import (
-    Distance,
-    Filter,
-    FilterSelector,
-    FieldCondition,
-    MatchValue,
-    PointStruct,
-    VectorParams,
-)
-
 from app.core.config import settings
+from app.core.errors import DependencyMissingError, UpstreamServiceError
+from app.core.retry import retry_transient
 
-# Initialize Qdrant client from global settings
-qdrant_client = QdrantClient(
-    url=settings.QDRANT_URL,
-    api_key=getattr(settings, "QDRANT_API_KEY", None) or None,
-)
+if TYPE_CHECKING:  # pragma: no cover
+    from qdrant_client import QdrantClient
+    from qdrant_client.models import Filter
 
 COLLECTION_NAME = settings.QDRANT_COLLECTION
+_client: "QdrantClient | None" = None
+
+
+def _get_client() -> "QdrantClient":
+    global _client
+    if _client is None:
+        try:
+            from qdrant_client import QdrantClient  # type: ignore
+        except ModuleNotFoundError as exc:
+            raise DependencyMissingError(
+                "qdrant-client is required for vector store operations",
+                details=[{"dependency": "qdrant-client"}],
+            ) from exc
+        _client = QdrantClient(
+            url=settings.QDRANT_URL,
+            api_key=getattr(settings, "QDRANT_API_KEY", None) or None,
+        )
+    return _client
+
+
+def _import_models():
+    try:
+        from qdrant_client.models import (  # type: ignore
+            Distance,
+            FieldCondition,
+            Filter,
+            FilterSelector,
+            MatchValue,
+            PointStruct,
+            VectorParams,
+        )
+    except ModuleNotFoundError as exc:
+        raise DependencyMissingError(
+            "qdrant-client is required for vector store operations",
+            details=[{"dependency": "qdrant-client"}],
+        ) from exc
+    return (
+        Distance,
+        Filter,
+        FilterSelector,
+        FieldCondition,
+        MatchValue,
+        PointStruct,
+        VectorParams,
+    )
 
 
 def ensure_collection(vector_size: int) -> None:
@@ -39,16 +75,29 @@ def ensure_collection(vector_size: int) -> None:
     This should be called before the first upsert to guarantee
     that Qdrant is configured with the correct vector size.
     """
-    if qdrant_client.collection_exists(COLLECTION_NAME):
-        return
+    Distance, _, _, _, _, _, VectorParams = _import_models()
+    client = _get_client()
 
-    qdrant_client.recreate_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(
-            size=vector_size,
-            distance=Distance.COSINE,
-        ),
-    )
+    @retry_transient
+    def _collection_exists() -> bool:
+        return client.collection_exists(COLLECTION_NAME)
+
+    @retry_transient
+    def _recreate() -> None:
+        client.recreate_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
+        )
+
+    try:
+        if _collection_exists():
+            return
+        _recreate()
+    except Exception as exc:
+        raise UpstreamServiceError(
+            "Vector store unavailable",
+            details=[{"provider": "qdrant", "collection": COLLECTION_NAME}],
+        ) from exc
 
 
 def upsert_embeddings(
@@ -73,7 +122,10 @@ def upsert_embeddings(
     vector_size = len(vectors[0])
     ensure_collection(vector_size)
 
-    points: List[PointStruct] = []
+    *_, PointStruct, _ = _import_models()
+    client = _get_client()
+
+    points: List[Any] = []
     for i in range(len(ids)):
         # Copy metadata to avoid mutating the original
         payload = dict(metadatas[i])
@@ -88,11 +140,17 @@ def upsert_embeddings(
             )
         )
 
-    qdrant_client.upsert(
-        collection_name=COLLECTION_NAME,
-        points=points,
-        wait=True,
-    )
+    @retry_transient
+    def _upsert() -> None:
+        client.upsert(collection_name=COLLECTION_NAME, points=points, wait=True)
+
+    try:
+        _upsert()
+    except Exception as exc:
+        raise UpstreamServiceError(
+            "Vector store unavailable",
+            details=[{"provider": "qdrant", "collection": COLLECTION_NAME}],
+        ) from exc
 
 
 def search_similar(
@@ -101,7 +159,7 @@ def search_similar(
     filter_metadata: Optional[Dict[str, Any]] = None,
     score_threshold: Optional[float] = None,
     with_vectors: bool = False,
-    custom_filter: Optional[Filter] = None,
+    custom_filter: Optional["Filter"] = None,
 ):
     """
     Search for the most similar documents given a query vector.
@@ -115,7 +173,10 @@ def search_similar(
     if not query_vector:
         return []
 
-    qdrant_filter: Optional[Filter] = custom_filter
+    _, Filter, _, FieldCondition, MatchValue, *_ = _import_models()
+    client = _get_client()
+
+    qdrant_filter: Optional[Any] = custom_filter
 
     # Build Qdrant filter from simple "field == value" conditions
     if filter_metadata and qdrant_filter is None:
@@ -130,16 +191,24 @@ def search_similar(
         if conditions:
             qdrant_filter = Filter(must=conditions)
 
-    search_result = qdrant_client.search(
-        collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
-        limit=limit,
-        query_filter=qdrant_filter,
-        score_threshold=score_threshold,
-        with_vectors=with_vectors,
-    )
+    @retry_transient
+    def _search():
+        return client.search(
+            collection_name=COLLECTION_NAME,
+            query_vector=query_vector,
+            limit=limit,
+            query_filter=qdrant_filter,
+            score_threshold=score_threshold,
+            with_vectors=with_vectors,
+        )
 
-    return search_result
+    try:
+        return _search()
+    except Exception as exc:
+        raise UpstreamServiceError(
+            "Vector store unavailable",
+            details=[{"provider": "qdrant", "collection": COLLECTION_NAME}],
+        ) from exc
 
 
 def delete_embeddings_by_logical_ids(logical_ids: List[str]) -> None:
@@ -149,14 +218,25 @@ def delete_embeddings_by_logical_ids(logical_ids: List[str]) -> None:
     if not logical_ids:
         return
 
+    _, Filter, FilterSelector, FieldCondition, MatchValue, *_ = _import_models()
+    client = _get_client()
+
     conditions = [
         FieldCondition(key="logical_id", match=MatchValue(value=lid))
         for lid in logical_ids
     ]
     selector = FilterSelector(filter=Filter(should=conditions))
 
-    qdrant_client.delete(
-        collection_name=COLLECTION_NAME,
-        points_selector=selector,
-        wait=True,
-    )
+    @retry_transient
+    def _delete() -> None:
+        client.delete(
+            collection_name=COLLECTION_NAME, points_selector=selector, wait=True
+        )
+
+    try:
+        _delete()
+    except Exception as exc:
+        raise UpstreamServiceError(
+            "Vector store unavailable",
+            details=[{"provider": "qdrant", "collection": COLLECTION_NAME}],
+        ) from exc

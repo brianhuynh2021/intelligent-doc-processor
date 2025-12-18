@@ -1,16 +1,23 @@
 from __future__ import annotations
 
-import logging
-from typing import List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 
-import anthropic
 from langchain_core.prompts import ChatPromptTemplate
-from openai import OpenAI
 
 from app.core.config import settings
+from app.core.errors import DependencyMissingError, UpstreamServiceError
+from app.core.logging import get_logger
+from app.core.retry import retry_transient
 from app.services.retrieval_service import RetrievalHit, semantic_search
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+
+if TYPE_CHECKING:  # pragma: no cover
+    import anthropic
+    from openai import OpenAI
+
+_openai_client: "OpenAI | None" = None
+_anthropic_client: "anthropic.Anthropic | None" = None
 
 
 def _format_history(history: Sequence) -> str:
@@ -24,7 +31,9 @@ def _format_history(history: Sequence) -> str:
     return "\n".join(lines)
 
 
-def _build_prompt_messages(question: str, contexts: List[RetrievalHit], history: Sequence | None = None):
+def _build_prompt_messages(
+    question: str, contexts: List[RetrievalHit], history: Sequence | None = None
+):
     system_prompt = (
         "You are an assistant that answers questions based on provided context chunks.\n"
         "Use only the information in the context. If unsure, say you don't know.\n"
@@ -47,7 +56,9 @@ def _build_prompt_messages(question: str, contexts: List[RetrievalHit], history:
             ),
         ]
     )
-    messages = prompt.format_messages(context=context_block, history=history_block, question=question)
+    messages = prompt.format_messages(
+        context=context_block, history=history_block, question=question
+    )
     # Convert to OpenAI/Anthropic style payload and normalize role names
     normalized = []
     for m in messages:
@@ -58,7 +69,9 @@ def _build_prompt_messages(question: str, contexts: List[RetrievalHit], history:
     return normalized
 
 
-def _truncate_contexts(contexts: List[RetrievalHit], max_chars: int) -> List[RetrievalHit]:
+def _truncate_contexts(
+    contexts: List[RetrievalHit], max_chars: int
+) -> List[RetrievalHit]:
     """Trim contexts to a character budget, preserving order."""
     kept = []
     total = 0
@@ -100,7 +113,9 @@ def answer_question(
 
     contexts = _truncate_contexts(search_result.hits, max_context_chars)
 
-    trimmed_history = list(history or [])[-max_history_messages:] if max_history_messages else []
+    trimmed_history = (
+        list(history or [])[-max_history_messages:] if max_history_messages else []
+    )
     messages = _build_prompt_messages(question, contexts, trimmed_history)
 
     model_name = model or settings.LLM_MODEL
@@ -140,7 +155,9 @@ def stream_answer(
     )
 
     contexts = _truncate_contexts(search_result.hits, max_context_chars)
-    trimmed_history = list(history or [])[-max_history_messages:] if max_history_messages else []
+    trimmed_history = (
+        list(history or [])[-max_history_messages:] if max_history_messages else []
+    )
     messages = _build_prompt_messages(question, contexts, trimmed_history)
 
     model_name = model or settings.LLM_MODEL
@@ -154,15 +171,23 @@ def stream_answer(
 
 
 def _call_openai_chat(model_name: str, messages: List[dict], stream: bool = False):
-    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    client = _get_openai_client()
     if stream:
+
         def token_generator():
-            completion = client.chat.completions.create(
-                model=model_name,
-                messages=messages,
-                temperature=0.2,
-                stream=True,
-            )
+            try:
+                completion = _openai_create_chat_completion(
+                    client=client,
+                    model=model_name,
+                    messages=messages,
+                    stream=True,
+                )
+            except Exception as exc:
+                raise UpstreamServiceError(
+                    "LLM provider failed",
+                    details=[{"provider": "openai", "model": model_name}],
+                ) from exc
+
             for chunk in completion:
                 delta = chunk.choices[0].delta.content
                 if delta:
@@ -170,17 +195,23 @@ def _call_openai_chat(model_name: str, messages: List[dict], stream: bool = Fals
 
         return token_generator()
 
-    response = client.chat.completions.create(
-        model=model_name,
-        messages=messages,
-        temperature=0.2,
-    )
-    return response.choices[0].message.content or ""
+    try:
+        response = _openai_create_chat_completion(
+            client=client,
+            model=model_name,
+            messages=messages,
+            stream=False,
+        )
+        return response.choices[0].message.content or ""
+    except Exception as exc:
+        raise UpstreamServiceError(
+            "LLM provider failed",
+            details=[{"provider": "openai", "model": model_name}],
+        ) from exc
 
 
 def _call_claude_chat(model_name: str, messages: List[dict]) -> str:
-    api_key = settings.ANTHROPIC_API_KEY or ""
-    client = anthropic.Anthropic(api_key=api_key)
+    client = _get_anthropic_client()
     # Anthropic expects messages with role user/assistant; ensure first is system -> convert to meta
     converted = []
     system_content = None
@@ -192,14 +223,74 @@ def _call_claude_chat(model_name: str, messages: List[dict]) -> str:
         else:
             converted.append({"role": role, "content": content})
 
-    response = client.messages.create(
-        model=model_name,
-        max_tokens=512,
-        messages=converted,
-        system=system_content,
-        temperature=0.2,
-    )
+    try:
+        response = _anthropic_create_message(
+            client=client,
+            model=model_name,
+            system=system_content,
+            messages=converted,
+        )
+    except Exception as exc:
+        raise UpstreamServiceError(
+            "LLM provider failed",
+            details=[{"provider": "anthropic", "model": model_name}],
+        ) from exc
+
     # Anthropic returns list of content blocks
     parts = response.content or []
     text_parts = [getattr(p, "text", "") for p in parts]
     return "\n".join([t for t in text_parts if t])
+
+
+def _get_openai_client() -> "OpenAI":
+    global _openai_client
+    if _openai_client is None:
+        try:
+            from openai import OpenAI  # type: ignore
+        except ModuleNotFoundError as exc:
+            raise DependencyMissingError(
+                "openai is required for OpenAI models",
+                details=[{"dependency": "openai"}],
+            ) from exc
+        _openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    return _openai_client
+
+
+def _get_anthropic_client():
+    global _anthropic_client
+    if _anthropic_client is None:
+        try:
+            import anthropic  # type: ignore
+        except ModuleNotFoundError as exc:
+            raise DependencyMissingError(
+                "anthropic is required for Claude models",
+                details=[{"dependency": "anthropic"}],
+            ) from exc
+        api_key = settings.ANTHROPIC_API_KEY or ""
+        _anthropic_client = anthropic.Anthropic(api_key=api_key)
+    return _anthropic_client
+
+
+@retry_transient
+def _openai_create_chat_completion(
+    *, client: Any, model: str, messages: List[dict], stream: bool
+):
+    return client.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=0.2,
+        stream=stream,
+    )
+
+
+@retry_transient
+def _anthropic_create_message(
+    *, client: Any, model: str, system: str | None, messages: List[dict]
+):
+    return client.messages.create(
+        model=model,
+        max_tokens=512,
+        messages=messages,
+        system=system,
+        temperature=0.2,
+    )

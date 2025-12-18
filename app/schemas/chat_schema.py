@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.search_schema import SearchFilter
 
@@ -17,6 +17,14 @@ class ChatRequest(BaseModel):
     session_id: Optional[int] = None
     stream: bool = False
     max_history_messages: int = Field(10, ge=0, le=50)
+
+    @field_validator("question")
+    @classmethod
+    def _normalize_question(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("question must not be empty")
+        return v
 
 
 class ContextChunk(BaseModel):

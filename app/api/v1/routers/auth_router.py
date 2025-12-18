@@ -62,12 +62,31 @@ def _do_login(
 
 
 @router.post(
-    "/login",
+    "/login-json",
     summary="Login using email or username",
     description="You can login using either your email or your username.",
 )
 def login_json(body: LoginRequest, request: Request, db: Session = Depends(get_db)):
     return _do_login(db, identifier=body.email, password=body.password, request=request)
+
+
+@router.post(
+    "/login",
+    summary="Login using form data",
+    description="Form login with fields: username, password.",
+)
+async def login_form(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    form = await request.form()
+    identifier = str(form.get("username") or form.get("email") or "").strip()
+    password = str(form.get("password") or "")
+    if not identifier or not password:
+        raise HTTPException(
+            status_code=422, detail="username and password are required"
+        )
+    return _do_login(db, identifier=identifier, password=password, request=request)
 
 
 @router.post("/register", response_model=UserOut, summary="Register a new user")

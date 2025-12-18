@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import List
 
-from pypdf import PdfReader
 from sqlalchemy.orm import Session
 
+from app.core.errors import DependencyMissingError
 from app.models.document_model import Document
 
 
@@ -18,6 +18,14 @@ def ocr_pdf_file(pdf_path: str) -> List[PageOcrResult]:
     """
     Extract text from PDF pages using PyPDF (no OCR for scanned images).
     """
+    try:
+        from pypdf import PdfReader  # type: ignore
+    except ModuleNotFoundError as exc:
+        raise DependencyMissingError(
+            "pypdf is required to extract text from PDFs",
+            details=[{"dependency": "pypdf"}],
+        ) from exc
+
     reader = PdfReader(pdf_path)
     page_results: List[PageOcrResult] = []
 

@@ -1,18 +1,16 @@
-import pytest
-from qdrant_client.models import ScoredPoint
-
 from app.services import retrieval_service
 from app.services.retrieval_service import mmr_rerank
 
 
 def make_point(pid, vector, score, payload=None):
-    return ScoredPoint(
-        id=pid,
-        payload=payload or {"text": f"{pid}_text"},
-        score=score,
-        version=0,
-        vector=vector,
-    )
+    class _Point:
+        def __init__(self, pid, vector, score, payload):
+            self.id = pid
+            self.vector = vector
+            self.score = score
+            self.payload = payload
+
+    return _Point(pid, vector, score, payload or {"text": f"{pid}_text"})
 
 
 def test_mmr_rerank_prefers_diversity():

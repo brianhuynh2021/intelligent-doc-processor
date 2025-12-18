@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from qdrant_client.models import ScoredPoint
+if TYPE_CHECKING:  # pragma: no cover
+    from qdrant_client.models import ScoredPoint
+else:  # pragma: no cover
+    ScoredPoint = Any  # type: ignore
 
 from app.services.embedding_service import embed_with_cache
 from app.services.vector_store import search_similar
