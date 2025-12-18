@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 # Import the actual router under test
 from app.api.v1.routers.auth_router import router as auth_router
+from app.core.auth import get_current_user
 
 
 # ---- Test app setup (mount the real router) ----
@@ -11,6 +12,17 @@ from app.api.v1.routers.auth_router import router as auth_router
 def app() -> FastAPI:
     app = FastAPI()
     app.include_router(auth_router, prefix="/api/v1")
+    app.dependency_overrides[get_current_user] = lambda: type(
+        "U",
+        (),
+        {
+            "id": 1,
+            "email": "brian@example.com",
+            "username": "brian",
+            "is_active": True,
+            "is_admin": True,
+        },
+    )()
     return app
 
 
@@ -230,3 +242,12 @@ def test_refresh_with_invalid_token(client: TestClient):
     res = client.post("/api/v1/auth/refresh", json={"refresh_token": "does-not-exist"})
     assert res.status_code == 401
     assert res.json()["detail"] == "Invalid or expired refresh token"
+
+
+def test_me_returns_current_user(client: TestClient):
+    res = client.get("/api/v1/auth/me")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["email"] == "brian@example.com"
+    assert data["username"] == "brian"
+    assert data["is_admin"] is True

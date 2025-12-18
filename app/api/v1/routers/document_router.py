@@ -30,6 +30,8 @@ def list_documents(
     current_user=Depends(get_current_user),
 ):
     query = db.query(Document).filter(Document.is_deleted.is_(False))
+    if not getattr(current_user, "is_admin", False):
+        query = query.filter(Document.owner_id == current_user.id)
     total = query.count()
     docs = query.order_by(Document.created_at.desc()).offset(skip).limit(limit).all()
     return DocumentListResponse(
