@@ -81,6 +81,11 @@ services:
       ENVIRONMENT: ${APP_ENV:-development}
       DEBUG: ${DEBUG:-true}
 
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-documents}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-1536}
+      QDRANT_API_KEY: ${QDRANT_API_KEY}
+
       # Composite URLs
       DATABASE_URL: postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-intelligent_docs}
       REDIS_URL: redis://redis:6379/0

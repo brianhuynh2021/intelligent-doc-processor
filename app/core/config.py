@@ -34,7 +34,7 @@ class AppSettings(BaseSettings):
     """Application settings"""
 
     # Vector DB Settings
-    QDRANT_URL: str = os.getenv("QDRANT_URL", "http://qdrant:6333")
+    QDRANT_URL: str = os.getenv("QDRANT_URL", "http://localhost:6333")
     QDRANT_COLLECTION: str = os.getenv("QDRANT_COLLECTION", "documents")
     EMBEDDING_DIM: int = int(os.getenv("EMBEDDING_DIM", "1536"))
     QDRANT_API_KEY: str | None = os.getenv("QDRANT_API_KEY")  # optional
