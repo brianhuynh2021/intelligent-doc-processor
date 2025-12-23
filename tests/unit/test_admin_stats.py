@@ -44,7 +44,9 @@ def app_and_db():
 
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user] = lambda: type(
-        "U", (), {"id": 1, "is_admin": True}
+        "U",
+        (),
+        {"id": 1, "is_admin": True},
     )()
 
     return app, TestingSessionLocal
@@ -157,14 +159,12 @@ def test_chat_stats_counts(client: TestClient, db_session):
         name="Session 1",
         created_by_user_id=1,
         created_at=now - timedelta(days=2),
-        updated_at=now - timedelta(days=2),
     )
     s2 = ChatSession(
         session_key="s2",
         name="Session 2",
         created_by_user_id=2,
         created_at=now - timedelta(hours=2),
-        updated_at=now - timedelta(hours=2),
     )
     db_session.add_all([s1, s2])
     db_session.commit()

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_access_token, verify_password
@@ -97,6 +98,11 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
     user = create_user(db, user_in)
     return user
+
+
+@router.get("/me", response_model=UserOut, summary="Get current user")
+def me(current_user=Depends(get_current_user)):
+    return current_user
 
 
 class RefreshIn(BaseModel):
