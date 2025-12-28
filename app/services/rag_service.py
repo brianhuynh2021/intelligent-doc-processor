@@ -18,6 +18,48 @@ if TYPE_CHECKING:  # pragma: no cover
 
 _openai_client: "OpenAI | None" = None
 _anthropic_client: "anthropic.Anthropic | None" = None
+_gemini_module: Any | None = None
+
+_PROVIDER_ALIASES = {
+    "openai": "openai",
+    "oai": "openai",
+    "anthropic": "anthropic",
+    "claude": "anthropic",
+    "gemini": "gemini",
+    "google": "gemini",
+}
+
+
+def _normalize_model_name(model: Optional[str]) -> str:
+    if not model:
+        return settings.LLM_MODEL
+    model_name = model.strip()
+    if not model_name:
+        return settings.LLM_MODEL
+    if model_name.lower().startswith("auto"):
+        return settings.LLM_MODEL
+    return model_name
+
+
+def _resolve_provider(model_name: str) -> tuple[str, str]:
+    if ":" in model_name:
+        prefix, rest = model_name.split(":", 1)
+        provider = _PROVIDER_ALIASES.get(prefix.strip().lower())
+        if provider:
+            cleaned = rest.strip() or model_name
+            return provider, cleaned
+    if "/" in model_name:
+        prefix, rest = model_name.split("/", 1)
+        provider = _PROVIDER_ALIASES.get(prefix.strip().lower())
+        if provider:
+            cleaned = rest.strip() or model_name
+            return provider, cleaned
+    lower_model = model_name.lower()
+    if "claude" in lower_model or "anthropic" in lower_model:
+        return "anthropic", model_name
+    if "gemini" in lower_model:
+        return "gemini", model_name
+    return "openai", model_name
 
 
 def _format_history(history: Sequence) -> str:
@@ -118,13 +160,15 @@ def answer_question(
     )
     messages = _build_prompt_messages(question, contexts, trimmed_history)
 
-    model_name = model or settings.LLM_MODEL
-    lower_model = model_name.lower()
+    model_name = _normalize_model_name(model)
+    provider, provider_model = _resolve_provider(model_name)
 
-    if "claude" in lower_model:
-        answer = _call_claude_chat(model_name, messages)
+    if provider == "anthropic":
+        answer = _call_claude_chat(provider_model, messages)
+    elif provider == "gemini":
+        answer = _call_gemini_chat(provider_model, messages)
     else:
-        answer = _call_openai_chat(model_name, messages, stream=False)
+        answer = _call_openai_chat(provider_model, messages, stream=False)
 
     return answer, contexts, model_name
 
@@ -160,13 +204,18 @@ def stream_answer(
     )
     messages = _build_prompt_messages(question, contexts, trimmed_history)
 
-    model_name = model or settings.LLM_MODEL
-    if "claude" in model_name.lower():
+    model_name = _normalize_model_name(model)
+    provider, provider_model = _resolve_provider(model_name)
+    if provider == "anthropic":
         # Claude streaming not implemented; fallback to non-stream answer
-        answer = _call_claude_chat(model_name, messages)
+        answer = _call_claude_chat(provider_model, messages)
+        return answer, contexts, model_name
+    if provider == "gemini":
+        # Gemini streaming not implemented; fallback to non-stream answer
+        answer = _call_gemini_chat(provider_model, messages)
         return answer, contexts, model_name
 
-    token_gen = _call_openai_chat(model_name, messages, stream=True)
+    token_gen = _call_openai_chat(provider_model, messages, stream=True)
     return token_gen, contexts, model_name
 
 
@@ -242,6 +291,50 @@ def _call_claude_chat(model_name: str, messages: List[dict]) -> str:
     return "\n".join([t for t in text_parts if t])
 
 
+def _call_gemini_chat(model_name: str, messages: List[dict]) -> str:
+    genai = _get_gemini_module()
+    prompt = _messages_to_prompt(messages)
+    try:
+        model = genai.GenerativeModel(model_name)
+        response = _gemini_generate_content(model=model, prompt=prompt)
+    except Exception as exc:
+        raise UpstreamServiceError(
+            "LLM provider failed",
+            details=[{"provider": "gemini", "model": model_name}],
+        ) from exc
+    return _extract_gemini_text(response)
+
+
+def _messages_to_prompt(messages: List[dict]) -> str:
+    lines = []
+    for msg in messages:
+        role = (msg.get("role") or "user").lower()
+        if role == "assistant":
+            label = "Assistant"
+        elif role == "system":
+            label = "System"
+        else:
+            label = "User"
+        content = msg.get("content") or ""
+        lines.append(f"{label}: {content}")
+    return "\n".join(lines)
+
+
+def _extract_gemini_text(response: Any) -> str:
+    text = getattr(response, "text", None)
+    if text:
+        return text
+    candidates = getattr(response, "candidates", None) or []
+    parts = []
+    for candidate in candidates:
+        content = getattr(candidate, "content", None)
+        for part in getattr(content, "parts", []) or []:
+            part_text = getattr(part, "text", None)
+            if part_text:
+                parts.append(part_text)
+    return "\n".join(parts)
+
+
 def _get_openai_client() -> "OpenAI":
     global _openai_client
     if _openai_client is None:
@@ -271,6 +364,27 @@ def _get_anthropic_client():
     return _anthropic_client
 
 
+def _get_gemini_module():
+    global _gemini_module
+    if _gemini_module is None:
+        try:
+            import google.generativeai as genai  # type: ignore
+        except ModuleNotFoundError as exc:
+            raise DependencyMissingError(
+                "google-generativeai is required for Gemini models",
+                details=[{"dependency": "google-generativeai"}],
+            ) from exc
+        api_key = settings.GEMINI_API_KEY or ""
+        if not api_key:
+            raise DependencyMissingError(
+                "GEMINI_API_KEY is required for Gemini models",
+                details=[{"env": "GEMINI_API_KEY", "alt_env": "GOOGLE_API_KEY"}],
+            )
+        genai.configure(api_key=api_key)
+        _gemini_module = genai
+    return _gemini_module
+
+
 @retry_transient
 def _openai_create_chat_completion(
     *, client: Any, model: str, messages: List[dict], stream: bool
@@ -294,3 +408,8 @@ def _anthropic_create_message(
         system=system,
         temperature=0.2,
     )
+
+
+@retry_transient
+def _gemini_generate_content(*, model: Any, prompt: str):
+    return model.generate_content(prompt)

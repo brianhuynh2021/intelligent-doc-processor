@@ -27,11 +27,20 @@ def list_documents(
     db: Session = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    status: list[str]
+    | None = Query(None, description="Filter by document status (repeatable)"),
+    completed_only: bool = Query(False, description="Return only completed documents"),
     current_user=Depends(get_current_user),
 ):
     query = db.query(Document).filter(Document.is_deleted.is_(False))
     if not getattr(current_user, "is_admin", False):
         query = query.filter(Document.owner_id == current_user.id)
+    if completed_only:
+        query = query.filter(Document.status == "completed")
+    elif status:
+        normalized = [s.strip() for s in status if s and s.strip()]
+        if normalized:
+            query = query.filter(Document.status.in_(normalized))
     total = query.count()
     docs = query.order_by(Document.created_at.desc()).offset(skip).limit(limit).all()
     return DocumentListResponse(
