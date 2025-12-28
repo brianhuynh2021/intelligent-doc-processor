@@ -84,7 +84,15 @@ def _build_prompt_messages(
 
     formatted_chunks = []
     for idx, hit in enumerate(contexts, start=1):
-        formatted_chunks.append(f"[{idx}] (score={hit.score:.3f}) {hit.text}")
+        doc_name = (
+            hit.payload.get("document_name")
+            or hit.payload.get("document_original_filename")
+            or hit.payload.get("file_name")
+        )
+        source_info = f", doc={doc_name}" if doc_name else ""
+        formatted_chunks.append(
+            f"[{idx}] (score={hit.score:.3f}{source_info}) {hit.text}"
+        )
     context_block = "\n".join(formatted_chunks) or "No context available."
 
     history_block = _format_history(history or [])

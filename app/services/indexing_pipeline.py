@@ -46,6 +46,8 @@ def index_chunks(
             "file_id": c.get("file_id"),
             "document_id": c.get("document_id"),
             "owner_id": c.get("document_owner_id") or c.get("owner_id"),
+            "document_name": c.get("document_name"),
+            "document_original_filename": c.get("document_original_filename"),
             "page": c.get("page"),
             "chunk_index": c.get("chunk_index"),
             "content_type": c.get("content_type"),

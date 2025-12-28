@@ -47,6 +47,7 @@ class DocumentIngestionPipeline:
         "ocr": 35,
         "chunk": 70,
         "embed_store": 100,
+        "ingest": 100,
         "completed": 100,
         "error": 0,
     }
@@ -149,6 +150,7 @@ class DocumentIngestionPipeline:
             document_id=document.id,
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
+            update_status=False,
         )
 
     def _default_index_runner(
@@ -187,8 +189,8 @@ class DocumentIngestionPipeline:
 
     def _mark_completed(self, document: Document, total_duration_ms: int) -> None:
         document.status = "completed"
-        document.processing_step = "completed"
-        document.processing_progress = self.STEP_PROGRESS["completed"]
+        document.processing_step = "ingest"
+        document.processing_progress = 100
         document.processing_completed_at = datetime.now(timezone.utc)
         document.processing_duration_ms = total_duration_ms
         self.db.commit()
@@ -242,7 +244,9 @@ class DocumentIngestionPipeline:
                 rollback_exc,
             )
 
-    def _update_progress(self, document: Document, step: str, message: str | None) -> None:
+    def _update_progress(
+        self, document: Document, step: str, message: str | None
+    ) -> None:
         progress_value = self.STEP_PROGRESS.get(step, document.processing_progress)
         document.processing_step = step
         document.processing_progress = progress_value
@@ -284,11 +288,13 @@ class DocumentIngestionPipeline:
             if data.get("chunk_index") is not None
             else fallback_index
         )
-        page = data.get("page") if data.get("page") is not None else data.get("page_number")
+        page = (
+            data.get("page")
+            if data.get("page") is not None
+            else data.get("page_number")
+        )
         owner_id = (
-            data.get("document_owner_id")
-            or data.get("owner_id")
-            or document.owner_id
+            data.get("document_owner_id") or data.get("owner_id") or document.owner_id
         )
         logical_id = str(data.get("id") or f"{document.id}_{chunk_index}")
 
@@ -299,6 +305,8 @@ class DocumentIngestionPipeline:
             "page": page,
             "document_id": document.id,
             "document_owner_id": owner_id,
+            "document_name": document.name,
+            "document_original_filename": document.original_filename,
             "content_type": document.content_type,
             "document_created_at": document.created_at.isoformat()
             if document.created_at

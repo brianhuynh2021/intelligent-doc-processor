@@ -59,7 +59,7 @@ def test_ingestion_pipeline_happy_path(db_session, document):
     db_session.refresh(document)
 
     assert document.status == "completed"
-    assert document.processing_step == "completed"
+    assert document.processing_step == "ingest"
     assert document.processing_progress == 100
     assert document.text_content == "hello world"
     assert document.processing_started_at is not None

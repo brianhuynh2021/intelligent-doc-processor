@@ -42,7 +42,9 @@ def process_document_ocr(db: Session, document: Document):
     document.status = "processing"
     document.processing_step = "ocr"
     document.processing_progress = 0
+    document.processing_completed_at = None
     document.processing_duration_ms = None
+    document.last_error = None
     db.commit()
 
     try:
@@ -52,16 +54,17 @@ def process_document_ocr(db: Session, document: Document):
 
         # Save result
         document.text_content = full_text
-        document.status = "completed"
-        document.processing_progress = 100
-        document.processing_completed_at = datetime.now(timezone.utc)
+        document.status = "processing"
+        document.processing_step = "ocr"
+        document.processing_progress = 35
+        finished_at = datetime.now(timezone.utc)
         document.processing_duration_ms = int(
-            (document.processing_completed_at - started_at).total_seconds() * 1000
+            (finished_at - started_at).total_seconds() * 1000
         )
 
     except Exception as e:
         document.status = "error"
-        document.error_count += 1
+        document.error_count = (document.error_count or 0) + 1
         document.last_error = str(e)
         document.processing_progress = document.processing_progress or 0
         document.processing_step = "error"
