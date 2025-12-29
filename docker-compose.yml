@@ -64,6 +64,8 @@ services:
       - app-network
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
       # Individual vars (for app/core/config.py)
       # Use variable names from .env

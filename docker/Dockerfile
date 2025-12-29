@@ -16,6 +16,8 @@ RUN pip install --upgrade pip && \
 
 COPY ./app ./app
 
+COPY ./infra ./infra
+
 COPY ./alembic ./alembic
 COPY ./alembic.ini .
 
