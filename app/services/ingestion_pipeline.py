@@ -15,7 +15,10 @@ from app.services.chunk_service import chunk_document
 from app.services.indexing_pipeline import index_chunks
 from app.services.ocr_service import ocr_pdf_file
 from app.services.text_service import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE
-from app.services.vector_store import delete_embeddings_by_logical_ids
+from app.services.vector_store import (
+    delete_embeddings_by_document_id,
+    delete_embeddings_by_logical_ids,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -161,6 +164,7 @@ class DocumentIngestionPipeline:
             for idx, chunk in enumerate(chunks)
         ]
         if payloads:
+            delete_embeddings_by_document_id(document.id)
             index_chunks(payloads)
         return [p["id"] for p in payloads]
 

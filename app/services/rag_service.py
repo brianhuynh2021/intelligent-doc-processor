@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import unicodedata
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -71,6 +72,103 @@ def _format_history(history: Sequence) -> str:
         content = getattr(msg, "content", "")
         lines.append(f"{role}: {content}")
     return "\n".join(lines)
+
+
+def _strip_accents(text: str) -> str:
+    return "".join(
+        c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c)
+    )
+
+
+def _is_document_name_question(question: str) -> bool:
+    q = _strip_accents(question).lower()
+    keywords = (
+        "ten tai lieu",
+        "tai lieu nay la gi",
+        "tai lieu nay ten gi",
+        "ten file",
+        "file name",
+        "document name",
+        "name of the document",
+        "document title",
+    )
+    return any(k in q for k in keywords)
+
+
+def _collect_doc_names(contexts: List[RetrievalHit]) -> List[str]:
+    names = []
+    seen = set()
+    for hit in contexts:
+        payload = hit.payload or {}
+        for key in (
+            "document_name",
+            "document_original_filename",
+            "file_name",
+            "filename",
+            "name",
+        ):
+            value = payload.get(key)
+            if value and value not in seen:
+                names.append(value)
+                seen.add(value)
+                break
+    return names
+
+
+def _lookup_doc_names_by_ids(document_ids: List[int]) -> List[str]:
+    if not document_ids:
+        return []
+    unique_ids = []
+    seen = set()
+    for doc_id in document_ids:
+        if doc_id not in seen:
+            unique_ids.append(doc_id)
+            seen.add(doc_id)
+    try:
+        from app.core.database import SessionLocal
+        from app.models.document_model import Document
+    except Exception:
+        return []
+
+    db = SessionLocal()
+    try:
+        rows = (
+            db.query(Document.id, Document.name, Document.original_filename)
+            .filter(Document.id.in_(unique_ids))
+            .all()
+        )
+    finally:
+        db.close()
+
+    name_by_id = {row[0]: row[1] or row[2] for row in rows}
+    return [name_by_id.get(doc_id) for doc_id in unique_ids if name_by_id.get(doc_id)]
+
+
+def _maybe_answer_document_name(
+    question: str, contexts: List[RetrievalHit], filters
+) -> Optional[str]:
+    if not _is_document_name_question(question):
+        return None
+
+    names = _collect_doc_names(contexts)
+    if not names:
+        doc_ids: List[int] = []
+        if filters is not None and getattr(filters, "document_id", None) is not None:
+            doc_ids.append(int(filters.document_id))
+        else:
+            for hit in contexts:
+                doc_id = (hit.payload or {}).get("document_id")
+                if isinstance(doc_id, int):
+                    doc_ids.append(doc_id)
+                elif isinstance(doc_id, str) and doc_id.isdigit():
+                    doc_ids.append(int(doc_id))
+        names = _lookup_doc_names_by_ids(doc_ids)
+
+    if not names:
+        return None
+    if len(names) == 1:
+        return f"Document name: {names[0]}."
+    return "Document names: " + ", ".join(names) + "."
 
 
 def _build_prompt_messages(
@@ -168,6 +266,11 @@ def answer_question(
     )
     messages = _build_prompt_messages(question, contexts, trimmed_history)
 
+    maybe_answer = _maybe_answer_document_name(question, contexts, filters)
+    if maybe_answer:
+        model_name = _normalize_model_name(model)
+        return maybe_answer, contexts, model_name
+
     model_name = _normalize_model_name(model)
     provider, provider_model = _resolve_provider(model_name)
 
@@ -211,6 +314,11 @@ def stream_answer(
         list(history or [])[-max_history_messages:] if max_history_messages else []
     )
     messages = _build_prompt_messages(question, contexts, trimmed_history)
+
+    maybe_answer = _maybe_answer_document_name(question, contexts, filters)
+    if maybe_answer:
+        model_name = _normalize_model_name(model)
+        return maybe_answer, contexts, model_name
 
     model_name = _normalize_model_name(model)
     provider, provider_model = _resolve_provider(model_name)

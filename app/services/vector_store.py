@@ -68,6 +68,22 @@ def _import_models():
     )
 
 
+def _collection_exists() -> bool:
+    client = _get_client()
+
+    @retry_transient
+    def _exists() -> bool:
+        return client.collection_exists(COLLECTION_NAME)
+
+    try:
+        return _exists()
+    except Exception as exc:
+        raise UpstreamServiceError(
+            "Vector store unavailable",
+            details=[{"provider": "qdrant", "collection": COLLECTION_NAME}],
+        ) from exc
+
+
 def ensure_collection(vector_size: int) -> None:
     """
     Create the collection if it does not exist yet.
@@ -77,10 +93,6 @@ def ensure_collection(vector_size: int) -> None:
     """
     Distance, _, _, _, _, _, VectorParams = _import_models()
     client = _get_client()
-
-    @retry_transient
-    def _collection_exists() -> bool:
-        return client.collection_exists(COLLECTION_NAME)
 
     @retry_transient
     def _recreate() -> None:
@@ -218,6 +230,9 @@ def delete_embeddings_by_logical_ids(logical_ids: List[str]) -> None:
     if not logical_ids:
         return
 
+    if not _collection_exists():
+        return
+
     _, Filter, FilterSelector, FieldCondition, MatchValue, *_ = _import_models()
     client = _get_client()
 
@@ -226,6 +241,42 @@ def delete_embeddings_by_logical_ids(logical_ids: List[str]) -> None:
         for lid in logical_ids
     ]
     selector = FilterSelector(filter=Filter(should=conditions))
+
+    @retry_transient
+    def _delete() -> None:
+        client.delete(
+            collection_name=COLLECTION_NAME, points_selector=selector, wait=True
+        )
+
+    try:
+        _delete()
+    except Exception as exc:
+        raise UpstreamServiceError(
+            "Vector store unavailable",
+            details=[{"provider": "qdrant", "collection": COLLECTION_NAME}],
+        ) from exc
+
+
+def delete_embeddings_by_document_id(document_id: int) -> None:
+    """
+    Remove points from the collection by document_id stored in payload.
+    """
+    if not _collection_exists():
+        return
+
+    _, Filter, FilterSelector, FieldCondition, MatchValue, *_ = _import_models()
+    client = _get_client()
+
+    selector = FilterSelector(
+        filter=Filter(
+            must=[
+                FieldCondition(
+                    key="document_id",
+                    match=MatchValue(value=document_id),
+                )
+            ]
+        )
+    )
 
     @retry_transient
     def _delete() -> None:
