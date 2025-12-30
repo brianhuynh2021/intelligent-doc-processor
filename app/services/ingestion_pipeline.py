@@ -13,7 +13,7 @@ from app.models.document_model import Document
 from app.schemas.chunk_schema import ChunkInDB
 from app.services.chunk_service import chunk_document
 from app.services.indexing_pipeline import index_chunks
-from app.services.ocr_service import ocr_pdf_file
+from app.services.ocr_service import extract_document_text
 from app.services.text_service import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE
 from app.services.vector_store import (
     delete_embeddings_by_document_id,
@@ -142,8 +142,7 @@ class DocumentIngestionPipeline:
 
     # ---------- Default step implementations ----------
     def _default_ocr_runner(self, document: Document) -> str:
-        pages = ocr_pdf_file(document.file_path)
-        return "\n\n".join(f"[Page {p.page_number}]\n{p.text}" for p in pages)
+        return extract_document_text(document)
 
     def _default_chunk_runner(
         self, document: Document, chunk_size: int, chunk_overlap: int

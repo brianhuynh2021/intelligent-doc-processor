@@ -23,6 +23,8 @@ ALLOWED_CONTENT_TYPES = {
     # CSV
     "text/csv",
     "application/vnd.ms-excel",  # một số browser gửi CSV kiểu này
+    # XLSX
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     # TXT
     "text/plain",
 }
@@ -85,7 +87,7 @@ class AppSettings(BaseSettings):
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
     MAX_UPLOAD_SIZE: int = int(os.getenv("MAX_UPLOAD_SIZE", "10485760"))
     ALLOWED_EXTENSIONS: str = os.getenv(
-        "ALLOWED_EXTENSIONS", "pdf,png,jpg,jpeg,txt,docx"
+        "ALLOWED_EXTENSIONS", "pdf,png,jpg,jpeg,txt,docx,csv,xlsx"
     )
 
     @property

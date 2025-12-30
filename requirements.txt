@@ -71,6 +71,7 @@ platformdirs==4.5.0
 pluggy==1.6.0
 portalocker==2.10.1
 pypdf==5.2.0
+python-docx==1.1.2
 pre-commit==3.5.0
 protobuf==4.25.3
 psycopg2-binary==2.9.9
@@ -96,6 +97,7 @@ python-multipart==0.0.6
 PyYAML==6.0.3
 pyyaml_env_tag==1.1
 qdrant-client==1.9.1
+openpyxl==3.1.5
 redis==7.1.0
 regex==2025.9.18
 requests==2.32.5
