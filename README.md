@@ -342,7 +342,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **API Docs**: http://localhost:8000/docs
 - **ROADMAP**: [ROADMAP.md](ROADMAP.md)
 - **Changelog**: [CHANGELOG.md](CHANGELOG.md) (coming)
-
----
-
-Made with ❤️ and ☕ for FAANG interview preparation 🚀
