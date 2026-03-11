@@ -143,7 +143,7 @@ cp .env.example .env
 #### 3. Start Services
 ```bash
 # Build and start all services
-docker-compose up --build -d
+docker compose up --build -d
 
 # View logs
 docker-compose logs -f

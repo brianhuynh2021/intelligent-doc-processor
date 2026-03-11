@@ -61,6 +61,10 @@ def create_app() -> FastAPI:
         response.headers.setdefault("X-Request-ID", request_id)
         return response
 
+    @app.get("/health")
+    async def root_health_check():
+        return {"status": "healthy"}
+
     api_v1 = APIRouter(prefix=settings.API_PREFIX)
 
     @app.get("/")
