@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.core.config import ALLOWED_CONTENT_TYPES, MAX_FILE_SIZE, UPLOAD_DIR
+from app.core.config import ALLOWED_CONTENT_TYPES, MAX_FILE_SIZE, UPLOAD_DIR, settings
 from app.models.document_model import Document
 from app.models.file_model import File as FileModel
 from app.schemas.files_schema import (
@@ -13,14 +13,43 @@ from app.schemas.files_schema import (
     FileListResponse,
 )
 
+EXTENSION_TO_CONTENT_TYPE = {
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".txt": "text/plain",
+    ".csv": "text/csv",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+}
 
-def _validate_file_type(file: UploadFile) -> None:
-    if file.content_type not in ALLOWED_CONTENT_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported file type: {file.content_type}. "
-            "Allowed: PDF, DOCX, images (PNG/JPEG), CSV, TXT.",
+
+def _normalize_content_type(file: UploadFile) -> str:
+    content_type = (file.content_type or "").strip().lower()
+    ext = Path(file.filename or "").suffix.lower()
+    allowed_extensions = {f".{value}" for value in settings.get_allowed_extensions}
+    allowed_extensions.update(EXTENSION_TO_CONTENT_TYPE.keys())
+
+    if content_type in ALLOWED_CONTENT_TYPES:
+        return content_type
+
+    if ext in allowed_extensions:
+        return EXTENSION_TO_CONTENT_TYPE.get(
+            ext, content_type or "application/octet-stream"
         )
+
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=(
+            f"Unsupported file type: {file.content_type or 'unknown'}. "
+            "Allowed: PDF, DOCX, TXT, CSV, XLSX, PNG, JPEG."
+        ),
+    )
+
+
+def _validate_file_type(file: UploadFile) -> str:
+    return _normalize_content_type(file)
 
 
 def _validate_file_size(size: int) -> None:
@@ -39,7 +68,7 @@ def _validate_file_size(size: int) -> None:
 
 async def save_upload_file(file: UploadFile) -> dict:
     # 1. Validate content type
-    _validate_file_type(file)
+    normalized_content_type = _validate_file_type(file)
 
     # 2. Read content
     contents = await file.read()
@@ -67,7 +96,7 @@ async def save_upload_file(file: UploadFile) -> dict:
         "file_id": file_id,
         "filename": file.filename,
         "stored_name": stored_name,
-        "content_type": file.content_type,
+        "content_type": normalized_content_type,
         "size": size,
         "path": str(stored_path),
     }

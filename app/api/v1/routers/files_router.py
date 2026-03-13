@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user  # noqa: F401
 from app.core.database import get_db
-
 from app.models.user_model import User  # noqa: F401
 from app.schemas.files_schema import (
     FileCreate,
@@ -40,7 +39,7 @@ async def upload_file(
     Upload a single file via multipart/form-data.
 
     - Field name: `file`
-    - Valid types: PDF, DOCX, images (PNG/JPEG), CSV, TXT
+    - Valid types: PDF, DOCX, TXT, CSV, XLSX, images (PNG/JPEG)
     """
     # 1. Lưu file vật lý (local / MinIO) + validate type/size
     meta = await save_upload_file(file)

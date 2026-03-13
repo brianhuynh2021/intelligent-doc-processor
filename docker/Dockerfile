@@ -6,6 +6,9 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
     curl \
+    poppler-utils \
+    tesseract-ocr \
+    tesseract-ocr-vie \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy and install dependencies

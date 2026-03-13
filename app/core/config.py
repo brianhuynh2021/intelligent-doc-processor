@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -32,6 +33,20 @@ ALLOWED_CONTENT_TYPES = {
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
+def _get_env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+
+    normalized = raw.strip().lower()
+    if normalized in {"1", "true", "yes", "on", "debug", "development"}:
+        return True
+    if normalized in {"0", "false", "no", "off", "release", "prod", "production"}:
+        return False
+
+    return default
+
+
 class AppSettings(BaseSettings):
     """Application settings"""
 
@@ -46,7 +61,7 @@ class AppSettings(BaseSettings):
     VERSION: str = os.getenv("APP_VERSION", "0.1.0")
     API_PREFIX: str = os.getenv("API_V1_PREFIX", "/api/v1")
     ENVIRONMENT: str = os.getenv("APP_ENV", "development")
-    DEBUG: bool = os.getenv("DEBUG", "true").lower() == "true"
+    DEBUG: bool = _get_env_bool("DEBUG", True)
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8000"))
     # Database
@@ -93,7 +108,11 @@ class AppSettings(BaseSettings):
     @property
     def get_allowed_extensions(self) -> list[str]:
         """Get allowed file extensions as list"""
-        return self.ALLOWED_EXTENSIONS.split(",")
+        return [
+            ext.strip().lower()
+            for ext in self.ALLOWED_EXTENSIONS.split(",")
+            if ext and ext.strip()
+        ]
 
     @property
     def get_upload_path(self) -> str:
@@ -134,6 +153,27 @@ class AppSettings(BaseSettings):
 
     # Cache Settings
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def _coerce_debug(cls, value):
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"1", "true", "yes", "on", "debug", "development"}:
+                return True
+            if normalized in {
+                "0",
+                "false",
+                "no",
+                "off",
+                "release",
+                "prod",
+                "production",
+            }:
+                return False
+        return value
 
     class Config:
         env_file = ".env"

@@ -1,4 +1,6 @@
 import csv
+import os
+import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -6,6 +8,7 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
+from app.core.config import POPPLER_PATH, TESSERACT_CMD
 from app.core.errors import DependencyMissingError
 from app.models.document_model import Document
 
@@ -16,9 +19,72 @@ class PageOcrResult:
     text: str
 
 
+def _resolve_tesseract_cmd() -> str | None:
+    configured = TESSERACT_CMD.strip() if TESSERACT_CMD else ""
+    if configured and Path(configured).exists():
+        return configured
+    return shutil.which("tesseract")
+
+
+def _resolve_poppler_path() -> str | None:
+    configured = POPPLER_PATH.strip() if POPPLER_PATH else ""
+    if configured and Path(configured).exists():
+        return configured
+    pdftoppm_path = shutil.which("pdftoppm")
+    if not pdftoppm_path:
+        return None
+    return str(Path(pdftoppm_path).parent)
+
+
+def _has_meaningful_text(text: str) -> bool:
+    compact = "".join(text.split())
+    return len(compact) >= 20
+
+
+def _ocr_pdf_file_scanned(pdf_path: str) -> List[PageOcrResult]:
+    try:
+        from pdf2image import convert_from_path  # type: ignore
+    except ModuleNotFoundError as exc:
+        raise DependencyMissingError(
+            "pdf2image is required for scanned PDF OCR",
+            details=[{"dependency": "pdf2image"}],
+        ) from exc
+
+    try:
+        import pytesseract  # type: ignore
+    except ModuleNotFoundError as exc:
+        raise DependencyMissingError(
+            "pytesseract is required for scanned PDF OCR",
+            details=[{"dependency": "pytesseract"}],
+        ) from exc
+
+    tesseract_cmd = _resolve_tesseract_cmd()
+    if not tesseract_cmd:
+        raise DependencyMissingError(
+            "Tesseract binary not found for scanned PDF OCR",
+            details=[{"dependency": "tesseract"}],
+        )
+    pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
+
+    poppler_path = _resolve_poppler_path()
+    convert_kwargs = {"dpi": 300}
+    if poppler_path:
+        convert_kwargs["poppler_path"] = poppler_path
+
+    images = convert_from_path(pdf_path, **convert_kwargs)
+    language = os.getenv("TESSERACT_LANG", "eng+vie")
+
+    results: List[PageOcrResult] = []
+    for idx, image in enumerate(images, start=1):
+        text = pytesseract.image_to_string(image, lang=language) or ""
+        results.append(PageOcrResult(page_number=idx, text=text))
+
+    return results
+
+
 def ocr_pdf_file(pdf_path: str) -> List[PageOcrResult]:
     """
-    Extract text from PDF pages using PyPDF (no OCR for scanned images).
+    Extract text from PDF pages using PyPDF and fall back to OCR for scanned PDFs.
     """
     try:
         from pypdf import PdfReader  # type: ignore
@@ -35,7 +101,10 @@ def ocr_pdf_file(pdf_path: str) -> List[PageOcrResult]:
         text = page.extract_text() or ""
         page_results.append(PageOcrResult(page_number=idx, text=text))
 
-    return page_results
+    if any(_has_meaningful_text(page.text) for page in page_results):
+        return page_results
+
+    return _ocr_pdf_file_scanned(pdf_path)
 
 
 def _read_text_file(file_path: str) -> str:
