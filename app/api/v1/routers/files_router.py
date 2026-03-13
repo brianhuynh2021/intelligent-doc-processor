@@ -9,11 +9,13 @@ from app.schemas.files_schema import (
     FileCreate,
     FileDeleteResponse,
     FileDownloadResponse,
+    FileListResponse,
     UploadedFileResponse,
 )
 from app.services.file_service import (
     create_file,
     get_file_by_file_id,
+    list_files,
     save_upload_file,
     soft_delete_file,
 )
@@ -23,6 +25,16 @@ router = APIRouter(
     tags=["files"],
     dependencies=[Depends(get_current_user)],
 )
+
+
+@router.get("", response_model=FileListResponse, status_code=status.HTTP_200_OK)
+def get_files(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
+    """List uploaded files so FE can resolve file_id -> download/delete actions."""
+    return list_files(db=db, skip=skip, limit=limit)
 
 
 @router.post(
