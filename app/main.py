@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.v1.routers.admin_router import router as admin_router
 from app.api.v1.routers.auth_router import router as auth_router
@@ -16,6 +17,7 @@ from app.api.v1.routers.search_router import router as search_router
 from app.core.config import settings
 from app.core.exception_handlers import register_exception_handlers
 from app.core.logging import bind_context, clear_context, configure_logging, get_logger
+from app.core.rate_limit import limiter
 
 logger = get_logger(__name__)
 
@@ -30,6 +32,8 @@ def create_app() -> FastAPI:
     )
 
     register_exception_handlers(app)
+    app.state.limiter = limiter
+    app.add_middleware(SlowAPIMiddleware)
 
     app.add_middleware(
         CORSMiddleware,

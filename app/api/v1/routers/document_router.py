@@ -1,12 +1,14 @@
 from datetime import datetime, timezone
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.errors import NotFoundError
+from app.core.rate_limit import limiter
 from app.models.document_model import Document
 from app.schemas.chunk_schema import ChunkInDB
 from app.schemas.document_schema import (
@@ -88,7 +90,9 @@ def delete_document(
 
 
 @router.post("/{document_id}/ocr", response_model=DocumentInDB)
+@limiter.limit(settings.RATE_LIMIT_INGESTION)
 def run_document_ocr(
+    request: Request,
     document_id: int,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
@@ -107,7 +111,9 @@ def run_document_ocr(
 
 
 @router.post("/{document_id}/chunk", response_model=List[ChunkInDB])
+@limiter.limit(settings.RATE_LIMIT_INGESTION)
 def run_document_chunk(
+    request: Request,
     document_id: int,
     db: Session = Depends(get_db),
     chunk_size: int = Query(1000, ge=200, le=4000),
@@ -139,7 +145,9 @@ def run_document_chunk(
 
 
 @router.post("/{document_id}/ingest", response_model=IngestionResponse)
+@limiter.limit(settings.RATE_LIMIT_INGESTION)
 def run_document_ingestion(
+    request: Request,
     document_id: int,
     db: Session = Depends(get_db),
     chunk_size: int = Query(1000, ge=200, le=4000),

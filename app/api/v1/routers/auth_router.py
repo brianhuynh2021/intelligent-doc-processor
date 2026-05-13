@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.core.security import create_access_token, verify_password
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import (
@@ -67,6 +68,7 @@ def _do_login(
     summary="Login using email or username",
     description="You can login using either your email or your username.",
 )
+@limiter.limit(settings.RATE_LIMIT_AUTH)
 def login_json(body: LoginRequest, request: Request, db: Session = Depends(get_db)):
     return _do_login(db, identifier=body.email, password=body.password, request=request)
 
@@ -76,6 +78,7 @@ def login_json(body: LoginRequest, request: Request, db: Session = Depends(get_d
     summary="Login using form data",
     description="Form login with fields: username, password.",
 )
+@limiter.limit(settings.RATE_LIMIT_AUTH)
 async def login_form(
     request: Request,
     db: Session = Depends(get_db),
@@ -91,7 +94,12 @@ async def login_form(
 
 
 @router.post("/register", response_model=UserOut, summary="Register a new user")
-def register(user_in: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit(settings.RATE_LIMIT_REGISTER)
+def register(
+    request: Request,
+    user_in: UserCreate,
+    db: Session = Depends(get_db),
+):
     existing_user = get_user_by_email(db, email=user_in.email)
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -110,6 +118,7 @@ class RefreshIn(BaseModel):
 
 
 @router.post("/refresh")
+@limiter.limit(settings.RATE_LIMIT_REFRESH)
 def refresh(body: RefreshIn, request: Request, db: Session = Depends(get_db)):
     token_hash = hashlib.sha256(body.refresh_token.encode()).hexdigest()
     stored = RefreshTokenRepository.get_valid(db, token_hash)

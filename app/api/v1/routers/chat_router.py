@@ -3,6 +3,7 @@ from fastapi import (
     Depends,
     HTTPException,
     Query,
+    Request,
     WebSocket,
     WebSocketDisconnect,
 )
@@ -10,8 +11,10 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
+from app.core.config import settings
 from app.core.database import SessionLocal, get_db
 from app.core.logging import get_logger
+from app.core.rate_limit import limiter
 from app.schemas.chat_schema import ChatRequest, ChatResponse, ContextChunk
 from app.schemas.chat_session_schema import (
     ChatMessageResponse,
@@ -69,7 +72,9 @@ def get_history(
 
 
 @router.post("/ask", response_model=ChatResponse)
+@limiter.limit(settings.RATE_LIMIT_CHAT)
 def ask_question(
+    request: Request,
     body: ChatRequest,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
@@ -172,9 +177,14 @@ def ask_question(
 
 
 @router.post("", response_model=ChatResponse)
-def chat_alias(body: ChatRequest, db: Session = Depends(get_db)):
+def chat_alias(
+    request: Request,
+    body: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     """Alias for /chat/ask"""
-    return ask_question(body=body, db=db)
+    return ask_question(request=request, body=body, db=db, current_user=current_user)
 
 
 @router.websocket("/ws")

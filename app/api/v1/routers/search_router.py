@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from app.core.auth import get_current_user
+from app.core.config import settings
 from app.core.errors import DependencyMissingError
+from app.core.rate_limit import limiter
 from app.schemas.search_schema import (
     SearchFilter,
     SearchRequest,
@@ -82,7 +84,8 @@ def build_qdrant_filter(filter_obj: SearchFilter | None) -> "Filter | None":
 
 
 @router.post("", response_model=SearchResponse)
-def semantic_search_endpoint(body: SearchRequest):
+@limiter.limit(settings.RATE_LIMIT_SEARCH)
+def semantic_search_endpoint(request: Request, body: SearchRequest):
     qdrant_filter = build_qdrant_filter(body.filters)
     result = semantic_search(
         query=body.query,

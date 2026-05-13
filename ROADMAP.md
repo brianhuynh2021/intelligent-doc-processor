@@ -160,7 +160,7 @@ project/
 - [x] Test error scenarios
 
 **Ngày 17: Rate Limiting & Security**
-- [ ] Implement rate limiting (slowapi)
+- [x] Implement rate limiting (slowapi)
 - [ ] API key management
 - [ ] RBAC (Role-Based Access Control)
 - [ ] Input sanitization

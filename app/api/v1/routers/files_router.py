@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user  # noqa: F401
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.models.user_model import User  # noqa: F401
 from app.schemas.files_schema import (
     FileCreate,
@@ -42,7 +44,9 @@ def get_files(
     response_model=UploadedFileResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit(settings.RATE_LIMIT_UPLOAD)
 async def upload_file(
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),

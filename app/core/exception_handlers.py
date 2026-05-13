@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
+from slowapi.errors import RateLimitExceeded
 from starlette.responses import JSONResponse
 
 from app.core.config import settings
@@ -61,6 +62,16 @@ def _error_response(
 
 
 def register_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(RateLimitExceeded)
+    async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+        return _error_response(
+            request=request,
+            status_code=429,
+            code="rate_limited",
+            message="Rate limit exceeded",
+            details=[{"limit": str(exc.detail)}],
+        )
+
     @app.exception_handler(RequestValidationError)
     async def request_validation_error_handler(
         request: Request, exc: RequestValidationError

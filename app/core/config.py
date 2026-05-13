@@ -154,6 +154,18 @@ class AppSettings(BaseSettings):
     # Cache Settings
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
+    # Rate limiting
+    RATE_LIMIT_ENABLED: bool = _get_env_bool("RATE_LIMIT_ENABLED", True)
+    RATE_LIMIT_STORAGE_URI: str = os.getenv("RATE_LIMIT_STORAGE_URI", "memory://")
+    RATE_LIMIT_DEFAULT: str = os.getenv("RATE_LIMIT_DEFAULT", "200/minute")
+    RATE_LIMIT_AUTH: str = os.getenv("RATE_LIMIT_AUTH", "10/minute")
+    RATE_LIMIT_REGISTER: str = os.getenv("RATE_LIMIT_REGISTER", "5/minute")
+    RATE_LIMIT_REFRESH: str = os.getenv("RATE_LIMIT_REFRESH", "20/minute")
+    RATE_LIMIT_UPLOAD: str = os.getenv("RATE_LIMIT_UPLOAD", "10/minute")
+    RATE_LIMIT_INGESTION: str = os.getenv("RATE_LIMIT_INGESTION", "5/minute")
+    RATE_LIMIT_SEARCH: str = os.getenv("RATE_LIMIT_SEARCH", "30/minute")
+    RATE_LIMIT_CHAT: str = os.getenv("RATE_LIMIT_CHAT", "20/minute")
+
     @field_validator("DEBUG", mode="before")
     @classmethod
     def _coerce_debug(cls, value):
