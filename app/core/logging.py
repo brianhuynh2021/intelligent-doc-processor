@@ -29,7 +29,7 @@ def configure_logging() -> None:
     logging.basicConfig(
         level=log_level,
         format="%(message)s",
-        stream=sys.stdout,
+        stream=sys.stderr,
     )
 
     if structlog is None:
