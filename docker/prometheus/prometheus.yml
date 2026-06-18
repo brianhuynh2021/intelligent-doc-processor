@@ -1,0 +1,20 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Scrape the FastAPI app's /metrics (exposed by prometheus-fastapi-instrumentator).
+  # Two targets so it works whether the API runs in Docker (container name) or
+  # on the host during dev (host.docker.internal). The one that's down is ignored.
+  - job_name: doc-processor-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["doc_processor_api:8000"]
+        labels: { service: doc-processor-api, where: docker }
+      - targets: ["host.docker.internal:8000"]
+        labels: { service: doc-processor-api, where: host }
+
+  # Prometheus scraping itself
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

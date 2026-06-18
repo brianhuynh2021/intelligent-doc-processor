@@ -1,0 +1,51 @@
+# Opt-in observability stack: Prometheus + Grafana.
+# Run alongside the main stack so Prometheus can reach the API container:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
+#
+# Then open:
+#   - Prometheus  http://localhost:9090
+#   - Grafana     http://localhost:3001  (login admin / admin)
+#                 dashboard: "Doc Processor — API Overview" (auto-provisioned)
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: doc_processor_prometheus
+    restart: unless-stopped
+    networks:
+      - app-network
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: doc_processor_grafana
+    restart: unless-stopped
+    networks:
+      - app-network
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:

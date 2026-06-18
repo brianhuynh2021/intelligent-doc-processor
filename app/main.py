@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from time import monotonic
 from uuid import uuid4
 
@@ -32,18 +33,69 @@ from app.core.rate_limit import limiter
 logger = get_logger(__name__)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup/shutdown hooks. On shutdown, dispose the DB engine so in-flight
+    connections are closed cleanly (graceful shutdown)."""
+    logger.info("app_startup", environment=settings.ENVIRONMENT)
+    yield
+    from app.core.database import engine
+
+    engine.dispose()
+    logger.info("app_shutdown")
+
+
 def create_app() -> FastAPI:
     configure_logging()
 
     app = FastAPI(
         title="Intelligent Document Processor",
         version=settings.VERSION,
-        description="AI-powered document processing platform",
+        description=(
+            "AI-powered document processing platform: upload → OCR → chunk → "
+            "embed → semantic search & RAG chat. Auth via JWT or API key."
+        ),
+        lifespan=lifespan,
+        openapi_tags=[
+            {"name": "auth", "description": "Register, login, token refresh."},
+            {"name": "files", "description": "Upload and manage raw files."},
+            {
+                "name": "documents",
+                "description": "Document lifecycle: OCR, chunk, ingest, delete.",
+            },
+            {
+                "name": "search",
+                "description": "Semantic (vector) and keyword (full-text) search.",
+            },
+            {"name": "chat", "description": "RAG chat with conversation memory."},
+            {
+                "name": "api-keys",
+                "description": "Programmatic access keys (X-API-Key).",
+            },
+            {"name": "admin", "description": "Admin-only stats and cache controls."},
+            {
+                "name": "Health",
+                "description": "Liveness/readiness probes and dependency checks.",
+            },
+        ],
     )
 
     register_exception_handlers(app)
     app.state.limiter = limiter
     app.add_middleware(SlowAPIMiddleware)
+
+    # Prometheus metrics at /metrics (request count, latency histograms, etc.)
+    try:
+        from prometheus_fastapi_instrumentator import Instrumentator
+
+        Instrumentator(
+            should_group_status_codes=True,
+            excluded_handlers=["/metrics", "/health.*"],
+        ).instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+    except ModuleNotFoundError:  # pragma: no cover
+        logger.warning(
+            "prometheus_fastapi_instrumentator not installed; /metrics disabled"
+        )
 
     app.add_middleware(
         CORSMiddleware,
