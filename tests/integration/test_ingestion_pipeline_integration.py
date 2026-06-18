@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.models import Base
 from app.models.document_model import Document
@@ -10,8 +11,9 @@ from app.services.ingestion_pipeline import DocumentIngestionPipeline
 @pytest.fixture()
 def db_session():
     engine = create_engine(
-        "sqlite:///file:ingestmemdb?mode=memory&cache=shared",
-        connect_args={"check_same_thread": False, "uri": True},
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
     Base.metadata.create_all(bind=engine, tables=[Document.__table__])
     SessionLocal = sessionmaker(bind=engine)
@@ -20,6 +22,7 @@ def db_session():
         yield db
     finally:
         db.close()
+        engine.dispose()
 
 
 def test_ingestion_pipeline_end_to_end(db_session):

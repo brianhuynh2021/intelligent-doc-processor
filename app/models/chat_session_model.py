@@ -1,5 +1,4 @@
-from datetime import datetime
-from sqlalchemy import Column, DateTime, Integer, String, Index
+from sqlalchemy import Column, DateTime, Index, Integer, String
 from sqlalchemy.sql import func
 
 from app.models.base import Base
@@ -13,7 +12,9 @@ class ChatSession(Base):
     name = Column(String(255), nullable=True)
     created_by_user_id = Column(Integer, nullable=True, index=True)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),

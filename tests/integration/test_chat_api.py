@@ -2,26 +2,30 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
-from app.main import app
+from app.core.auth import get_current_user
 from app.core.database import get_db
+from app.main import app
 from app.models import Base
 from app.services import rag_service
 from app.services.retrieval_service import RetrievalHit
-from app.core.auth import get_current_user
 
 
 @pytest.fixture(scope="module")
 def test_db():
     engine = create_engine(
-        "sqlite:///file:chatmemdb?mode=memory&cache=shared",
-        connect_args={"check_same_thread": False, "uri": True},
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    from app.models.chat_session_model import ChatSession
     from app.models.chat_message_model import ChatMessage
+    from app.models.chat_session_model import ChatSession
 
-    Base.metadata.create_all(bind=engine, tables=[ChatSession.__table__, ChatMessage.__table__])
+    Base.metadata.create_all(
+        bind=engine, tables=[ChatSession.__table__, ChatMessage.__table__]
+    )
 
     def override_get_db():
         db = TestingSessionLocal()
@@ -34,6 +38,7 @@ def test_db():
     app.dependency_overrides[get_current_user] = lambda: type("U", (), {"id": 1})()
     yield TestingSessionLocal
     app.dependency_overrides.clear()
+    engine.dispose()
 
 
 @pytest.fixture()
@@ -48,7 +53,9 @@ def test_chat_creates_session_and_persists_messages(monkeypatch, client, test_db
         return "mock answer", [hit], "gpt-4o"
 
     monkeypatch.setattr(rag_service, "answer_question", fake_answer_question)
-    monkeypatch.setattr("app.api.v1.routers.chat_router.answer_question", fake_answer_question)
+    monkeypatch.setattr(
+        "app.api.v1.routers.chat_router.answer_question", fake_answer_question
+    )
 
     payload = {
         "question": "Hello?",

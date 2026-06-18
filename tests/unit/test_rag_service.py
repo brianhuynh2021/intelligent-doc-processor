@@ -1,5 +1,3 @@
-import pytest
-
 from app.services import rag_service
 from app.services.retrieval_service import RetrievalHit, RetrievalResult
 
@@ -15,7 +13,9 @@ def test_answer_question_uses_openai(monkeypatch):
     monkeypatch.setattr(
         rag_service,
         "semantic_search",
-        lambda **kwargs: RetrievalResult(hits=make_hits(), used_mmr=True, total_candidates=2),
+        lambda **kwargs: RetrievalResult(
+            hits=make_hits(), used_mmr=True, total_candidates=2
+        ),
     )
     called = {}
 
@@ -43,7 +43,9 @@ def test_answer_question_uses_claude(monkeypatch):
     monkeypatch.setattr(
         rag_service,
         "semantic_search",
-        lambda **kwargs: RetrievalResult(hits=make_hits(), used_mmr=True, total_candidates=2),
+        lambda **kwargs: RetrievalResult(
+            hits=make_hits(), used_mmr=True, total_candidates=2
+        ),
     )
 
     def fake_claude(model_name, messages):

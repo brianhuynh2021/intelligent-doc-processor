@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.api.v1.routers.admin_router import router as admin_router
 from app.core.auth import get_current_user
@@ -25,8 +26,9 @@ def app_and_db():
     app.include_router(admin_router, prefix="/api/v1")
 
     engine = create_engine(
-        "sqlite:///file:adminstatsdb?mode=memory&cache=shared",
-        connect_args={"check_same_thread": False, "uri": True},
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -46,10 +48,12 @@ def app_and_db():
     app.dependency_overrides[get_current_user] = lambda: type(
         "U",
         (),
-        {"id": 1, "is_admin": True},
+        {"id": 1, "is_admin": True, "role": "admin"},
     )()
 
-    return app, TestingSessionLocal
+    yield app, TestingSessionLocal
+
+    engine.dispose()
 
 
 @pytest.fixture()

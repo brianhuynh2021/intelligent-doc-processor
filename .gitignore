@@ -53,6 +53,8 @@ htmlcov/
 *.db
 *.sqlite
 *.sqlite3
+# Stray SQLite files from misconfigured test URIs (file:NAME?mode=memory)
+file:*
 
 # Logs
 *.log
