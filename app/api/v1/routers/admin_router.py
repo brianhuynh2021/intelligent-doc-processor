@@ -18,10 +18,26 @@ from app.schemas.admin_stats_schema import (
     DocumentStatsResponse,
     DocumentStatusBuckets,
 )
+from app.services import cache_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 _require_admin = require_role(UserRole.ADMIN)
+
+
+@router.get("/cache/stats")
+def cache_stats(_admin=Depends(_require_admin)):
+    """Cache hit/miss counters since process start."""
+    return cache_service.stats.as_dict()
+
+
+@router.post("/cache/invalidate")
+def cache_invalidate(
+    namespace: str = Query("search", description="Cache namespace to clear"),
+    _admin=Depends(_require_admin),
+):
+    removed = cache_service.invalidate_namespace(namespace)
+    return {"namespace": namespace, "removed": removed}
 
 
 def _apply_datetime_range(

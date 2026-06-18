@@ -134,7 +134,13 @@ class AppSettings(BaseSettings):
     VECTOR_COLLECTION_NAME: str = os.getenv("VECTOR_COLLECTION_NAME", "documents")
 
     # Logging (Add these from .env)
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    # If LOG_LEVEL is unset, default by environment: DEBUG in dev, INFO in prod.
+    LOG_LEVEL: str = os.getenv(
+        "LOG_LEVEL",
+        "INFO"
+        if os.getenv("APP_ENV", "development").lower().startswith(("prod", "release"))
+        else "DEBUG",
+    )
     LOG_FORMAT: str = os.getenv("LOG_FORMAT", "json")
 
     # Retries
@@ -153,6 +159,8 @@ class AppSettings(BaseSettings):
 
     # Cache Settings
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    CACHE_TTL_SEARCH: int = int(os.getenv("CACHE_TTL_SEARCH", "300"))  # 5 min
+    CACHE_TTL_RAG: int = int(os.getenv("CACHE_TTL_RAG", "600"))  # 10 min
 
     # CORS
     CORS_ORIGINS: str = os.getenv(

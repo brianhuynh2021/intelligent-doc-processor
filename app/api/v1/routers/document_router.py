@@ -18,6 +18,7 @@ from app.schemas.document_schema import (
     IngestionResponse,
     IngestionStep,
 )
+from app.services import cache_service
 from app.services.chunk_service import chunk_document
 from app.services.ingestion_pipeline import DocumentIngestionPipeline
 from app.services.ocr_service import process_document_ocr
@@ -90,6 +91,11 @@ def delete_document(
     doc.deleted_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(doc)
+
+    # Deleting a document can change search/RAG results — drop stale caches.
+    cache_service.invalidate_namespace("search")
+    cache_service.invalidate_namespace("rag")
+
     return DocumentInDB.model_validate(doc)
 
 
