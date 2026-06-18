@@ -6,9 +6,9 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import distinct, func
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_current_user
+from app.core.auth import require_role
 from app.core.database import get_db
-from app.core.errors import ForbiddenError
+from app.core.roles import UserRole
 from app.models.chat_message_model import ChatMessage
 from app.models.chat_session_model import ChatSession
 from app.models.document_model import Document
@@ -21,11 +21,7 @@ from app.schemas.admin_stats_schema import (
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
-
-def _require_admin(current_user=Depends(get_current_user)):
-    if not getattr(current_user, "is_admin", False):
-        raise ForbiddenError("Admin access required")
-    return current_user
+_require_admin = require_role(UserRole.ADMIN)
 
 
 def _apply_datetime_range(

@@ -6,7 +6,7 @@ from app.schemas.search_schema import SearchFilter
 
 
 class ChatRequest(BaseModel):
-    question: str = Field(..., min_length=1)
+    question: str = Field(..., min_length=1, max_length=4000)
     top_k: int = Field(4, ge=1, le=10)
     score_threshold: Optional[float] = Field(None, ge=-1.0, le=1.0)
     use_mmr: bool = True

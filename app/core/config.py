@@ -154,6 +154,15 @@ class AppSettings(BaseSettings):
     # Cache Settings
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
+    # CORS
+    CORS_ORIGINS: str = os.getenv(
+        "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
+    )
+
+    @property
+    def get_cors_origins(self) -> list[str]:
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
     # Rate limiting
     RATE_LIMIT_ENABLED: bool = _get_env_bool("RATE_LIMIT_ENABLED", True)
     RATE_LIMIT_STORAGE_URI: str = os.getenv("RATE_LIMIT_STORAGE_URI", "memory://")

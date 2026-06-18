@@ -161,11 +161,11 @@ project/
 
 **Ngày 17: Rate Limiting & Security**
 - [x] Implement rate limiting (slowapi)
-- [ ] API key management
-- [ ] RBAC (Role-Based Access Control)
-- [ ] Input sanitization
-- [ ] SQL injection prevention
-- [ ] Security headers
+- [x] API key management (model + service + CRUD endpoints + X-API-Key/JWT auth)
+- [x] RBAC (Role-Based Access Control) — UserRole enum + require_role()
+- [x] Input sanitization (filename + control chars + Pydantic max_length)
+- [x] SQL injection prevention (audit: ORM-only, no raw SQL with user input)
+- [x] Security headers (CSP/HSTS/X-Frame-Options + CORS whitelist)
 
 **Ngày 18: Caching Strategy**
 - [ ] Redis caching cho embeddings

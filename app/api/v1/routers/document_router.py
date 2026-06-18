@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.errors import NotFoundError
 from app.core.rate_limit import limiter
+from app.core.roles import UserRole, role_at_least
 from app.models.document_model import Document
 from app.schemas.chunk_schema import ChunkInDB
 from app.schemas.document_schema import (
@@ -35,7 +36,10 @@ def list_documents(
     current_user=Depends(get_current_user),
 ):
     query = db.query(Document).filter(Document.is_deleted.is_(False))
-    if not getattr(current_user, "is_admin", False):
+    user_role = getattr(current_user, "role", None) or (
+        "admin" if getattr(current_user, "is_admin", False) else "user"
+    )
+    if not role_at_least(user_role, UserRole.ADMIN):
         query = query.filter(Document.owner_id == current_user.id)
     if completed_only:
         query = query.filter(Document.status == "completed")

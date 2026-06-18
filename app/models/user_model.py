@@ -20,6 +20,7 @@ class User(Base):
     # User status
     is_active = Column(Boolean, default=True, nullable=False)
     is_admin = Column(Boolean, default=False, nullable=False)
+    role = Column(String(20), default="user", nullable=False, index=True)
 
     # Soft delete (never hard delete)
     is_deleted = Column(Boolean, default=False, nullable=False)

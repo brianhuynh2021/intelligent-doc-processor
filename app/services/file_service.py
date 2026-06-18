@@ -4,6 +4,7 @@ from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.config import ALLOWED_CONTENT_TYPES, MAX_FILE_SIZE, UPLOAD_DIR, settings
+from app.core.sanitize import safe_display_filename, sanitize_filename
 from app.models.document_model import Document
 from app.models.file_model import File as FileModel
 from app.schemas.files_schema import (
@@ -80,8 +81,10 @@ async def save_upload_file(file: UploadFile) -> dict:
     # 4. Generate unique file id & path
     import uuid
 
+    display_name = safe_display_filename(file.filename)
+    safe_for_fs = sanitize_filename(file.filename)
     file_id = str(uuid.uuid4())
-    ext = Path(file.filename).suffix
+    ext = Path(safe_for_fs).suffix
     stored_name = f"{file_id}{ext}"
     stored_path = UPLOAD_DIR / stored_name
 
@@ -94,7 +97,7 @@ async def save_upload_file(file: UploadFile) -> dict:
 
     return {
         "file_id": file_id,
-        "filename": file.filename,
+        "filename": display_name,
         "stored_name": stored_name,
         "content_type": normalized_content_type,
         "size": size,

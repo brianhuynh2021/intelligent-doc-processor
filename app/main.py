@@ -17,6 +17,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.a2a_agent import DocProcessorAgentExecutor
 from app.api.v1.routers.admin_router import router as admin_router
+from app.api.v1.routers.api_keys_router import router as api_keys_router
 from app.api.v1.routers.auth_router import router as auth_router
 from app.api.v1.routers.chat_router import router as chat_router
 from app.api.v1.routers.document_router import router as document_router
@@ -46,11 +47,26 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=settings.get_cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def security_headers_middleware(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers[
+            "Permissions-Policy"
+        ] = "geolocation=(), microphone=(), camera=()"
+        if settings.ENVIRONMENT == "production":
+            response.headers[
+                "Strict-Transport-Security"
+            ] = "max-age=63072000; includeSubDomains"
+        return response
 
     @app.middleware("http")
     async def request_context_middleware(request: Request, call_next):
@@ -108,6 +124,7 @@ def create_app() -> FastAPI:
     api_v1.include_router(search_router)
     api_v1.include_router(chat_router)
     api_v1.include_router(admin_router)
+    api_v1.include_router(api_keys_router)
     app.include_router(api_v1)
 
     # ── A2A ──────────────────────────────────────────────────────────────

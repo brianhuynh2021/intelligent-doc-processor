@@ -5,8 +5,8 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
-    username: Optional[str] = None
+    password: str = Field(min_length=8, max_length=128)
+    username: Optional[str] = Field(default=None, max_length=100)
 
     @field_validator("password")
     @classmethod
@@ -30,6 +30,7 @@ class UserOut(BaseModel):
     username: str | None = None
     is_active: bool
     is_admin: bool = False
+    role: str = "user"
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -43,10 +44,11 @@ class Token(BaseModel):
 
 class LoginRequest(BaseModel):
     email: str = Field(
+        max_length=255,
         description="Email or username. You can login with either.",
         examples=["huynh2102", "huynh2102@gmail.com"],
     )
-    password: str = Field(examples=["123456"])
+    password: str = Field(max_length=128, examples=["123456"])
 
     @field_validator("email")
     @classmethod

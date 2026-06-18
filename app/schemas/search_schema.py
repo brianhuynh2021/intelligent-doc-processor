@@ -31,7 +31,7 @@ class SearchFilter(BaseModel):
 
 
 class SearchRequest(BaseModel):
-    query: str = Field(..., min_length=1)
+    query: str = Field(..., min_length=1, max_length=1000)
     top_k: int = Field(5, ge=1, le=50)
     fetch_k: Optional[int] = Field(None, ge=1, le=200)
     score_threshold: Optional[float] = Field(None, ge=-1.0, le=1.0)
