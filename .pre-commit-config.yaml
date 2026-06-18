@@ -6,6 +6,8 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
+        # uv.lock legitimately exceeds the 500 KB default (168 pinned packages)
+        args: ["--maxkb=1024"]
 
   - repo: https://github.com/psf/black
     rev: 23.11.0

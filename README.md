@@ -117,56 +117,74 @@ An intelligent document processing system that combines OCR, NLP, and Large Lang
 
 ### Prerequisites
 
-```bash
-- Docker & Docker Compose
-- Python 3.11+
-- Git
-```
+- **Docker & Docker Compose** — to run the full stack
+- **[uv](https://docs.astral.sh/uv/)** — Python package/env manager (for local dev). Install:
+  ```bash
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  ```
+- **Git**
+
+> Dependencies are managed with **uv** + a committed **`uv.lock`** (single source
+> of truth). There is no `requirements.txt` — `uv.lock` pins every package
+> (direct + transitive) so local, CI, and Docker installs are identical and
+> can't drift. The pinned Python (3.11, see `.python-version`) matches the
+> Docker image.
 
 ### Installation
 
-#### 1. Clone Repository
+#### 1. Clone & configure
 ```bash
 git clone https://github.com/yourusername/intelligent-doc-processor.git
 cd intelligent-doc-processor
-```
-
-#### 2. Create Environment
-```bash
-# Create uploads directory
 mkdir -p uploads
-
-# Copy environment template (when ready)
-cp .env.example .env
+cp .env.example .env          # then fill in SECRET_KEY, API keys, etc.
 ```
 
-#### 3. Start Services
+#### 2A. Run everything in Docker (recommended)
 ```bash
-# Build and start all services
+# Build + start all services (db, redis, qdrant, api)
 docker compose up --build -d
 
-# View logs
-docker-compose logs -f
+# With observability (Prometheus + Grafana), use both files:
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
 
-# Stop services
-docker-compose down
+docker compose logs -f api    # view logs
+docker compose down           # stop
+```
+The API image is built from `uv.lock` via `uv sync --frozen` — fully reproducible.
+
+#### 2B. Run the app locally with uv (for fast iteration)
+```bash
+# Create the env from the lockfile (downloads Python 3.11 if needed)
+uv sync
+
+# Start only the backing services in Docker
+docker compose up -d db redis qdrant
+
+# Run the API on the host (uv resolves the .venv automatically — no `activate`)
+uv run uvicorn app.main:app --reload \
+  --env-file .env  # or export DATABASE_URL/REDIS_URL/QDRANT_URL to localhost ports
 ```
 
-#### 4. Verify Installation
+> System packages **tesseract-ocr** and **poppler** are NOT installed by uv.
+> The Docker image installs them; for host-only OCR: `brew install tesseract poppler`
+> (macOS) or `apt-get install tesseract-ocr poppler-utils` (Debian).
+
+#### 3. Managing dependencies (no more requirements drift)
 ```bash
-# Check service health
-docker-compose ps
+uv add <package>            # add a runtime dependency (updates pyproject + lock)
+uv add --dev <package>      # add a dev-only dependency
+uv remove <package>         # remove one
+uv lock --upgrade           # bump everything within constraints
+uv sync                     # apply the lock to your .venv
+uv export --no-dev > requirements.txt   # only if a tool needs a flat file
+```
 
-# Expected output:
-# doc_processor_db       Up (healthy)
-# doc_processor_redis    Up (healthy)
-# doc_processor_api      Up (healthy)
-
-# Test API
-curl http://localhost:8000/health
-
-# Open Swagger UI
-open http://localhost:8000/docs
+#### 4. Verify
+```bash
+docker compose ps                    # all services Up (api healthy)
+curl http://localhost:8000/health    # {"status":"healthy"}
+open http://localhost:8000/docs      # Swagger UI
 ```
 ---
 
@@ -207,36 +225,33 @@ docker-compose exec api alembic current
 
 ### Running Tests
 
+Run via `uv run` (uses the locked dev dependencies — no manual activation):
+
 ```bash
-# Run all tests
-pytest
-
-# With coverage
-pytest --cov=app --cov-report=html
-
-# Run specific test file
-pytest tests/test_auth.py
-
-# Run with verbose output
-pytest -v
+uv run pytest                      # all tests (41, no Docker needed — DB is in-memory SQLite)
+uv run pytest --cov=app            # with coverage
+uv run pytest tests/unit/test_auth.py   # a single file
+uv run pytest -v                   # verbose
 ```
 
 ### Code Quality
 
 ```bash
-# Format code
-black app/
-isort app/
+uv run ruff check app/ tests/      # lint
+uv run black app/ tests/           # format
+uv run isort app/ tests/           # import order
+uv run mypy app/                   # type check
+uv run pre-commit run --all-files  # everything
+```
 
-# Lint
-ruff check app/
-flake8 app/
+### Load Testing
 
-# Type check
-mypy app/
+`locust` is intentionally not in the locked deps (it pulls conflicting
+transitive versions). Install it ad-hoc:
 
-# All checks
-pre-commit run --all-files
+```bash
+uv pip install locust
+API_KEY=dpk_xxx locust -f tests/load/locustfile.py --host http://localhost:8000
 ```
 
 ### Database Access

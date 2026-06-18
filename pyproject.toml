@@ -1,0 +1,81 @@
+[project]
+name = "intelligent-doc-processor"
+version = "0.2.0"
+description = "AI-powered document processing platform: OCR, chunking, embeddings, semantic search & RAG chat."
+readme = "README.md"
+requires-python = ">=3.11"
+
+# Direct runtime dependencies. Transitive deps (grpcio, protobuf, ...) are
+# resolved and pinned by uv into uv.lock — that lock is the source of truth
+# for reproducible installs, so the "works on my machine but not in Docker"
+# drift that requirements.txt suffered can't happen.
+dependencies = [
+    # Web framework / server
+    "fastapi==0.136.1",
+    "uvicorn[standard]==0.47.0",
+    "python-multipart==0.0.29",
+    "slowapi==0.1.9",
+    "prometheus-fastapi-instrumentator==8.0.0",
+    # Data layer
+    "sqlalchemy==2.0.23",
+    "alembic==1.12.1",
+    "asyncpg==0.29.0",
+    "psycopg2-binary==2.9.9",
+    "redis==7.1.0",
+    "qdrant-client==1.9.1",
+    # Validation / settings
+    "pydantic[email]==2.12.4",
+    "pydantic-settings==2.14.1",
+    # Auth
+    "python-jose[cryptography]==3.3.0",
+    "passlib==1.7.4",
+    # AI / RAG
+    "openai==2.8.1",
+    "anthropic==0.25.9",
+    "google-genai==2.8.0",
+    "langchain-core==1.0.7",
+    "langchain-text-splitters==1.0.0",
+    "mcp==1.27.1",
+    "a2a-sdk==1.0.3",
+    "numpy==2.3.5",
+    # Document processing / OCR
+    "pdf2image==1.17.0",
+    "pypdf==5.2.0",
+    "python-docx==1.1.2",
+    "openpyxl==3.1.5",
+    "pillow==12.0.0",
+    "pytesseract==0.3.13",
+    # Utilities
+    "httpx==0.28.1",
+    "tenacity==8.5.0",
+    "structlog==24.4.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==7.4.3",
+    "pytest-asyncio==0.21.1",
+    "pytest-cov==4.1.0",
+    "pytest-mock==3.12.0",
+    "pytest-xdist==3.5.0",
+    "fakeredis==2.36.2",
+    "faker==20.1.0",
+    "ruff==0.1.6",
+    "black==23.11.0",
+    "isort==5.13.2",
+    "mypy==1.7.1",
+    "flake8==6.1.0",
+    "pre-commit==3.5.0",
+    "watchfiles==0.21.0",
+    "mkdocs==1.5.3",
+    "mkdocs-material==9.5.3",
+    # locust is intentionally omitted: it pulls httpx/gevent versions that
+    # conflict with the pinned set. Install ad-hoc to run tests/load/locustfile.py.
+]
+
+[tool.uv]
+# This is an application, not a distributable library: uv manages the
+# environment (.venv) from the lock, and the app runs from source (app/ on
+# sys.path). No wheel build needed.
+# System packages (tesseract-ocr, poppler) are NOT pip-installable — see README.
+package = false

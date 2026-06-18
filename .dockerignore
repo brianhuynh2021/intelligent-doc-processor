@@ -1,0 +1,35 @@
+# Virtual envs (image builds its own via uv)
+venv/
+.venv/
+
+# VCS / IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# Tests, docs, local data — not needed in the runtime image
+tests/
+docs/
+uploads/
+*.md
+
+# Local SQLite artifacts and stray DB files
+*.db
+*.sqlite*
+file:*
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
