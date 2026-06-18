@@ -19,7 +19,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 _openai_client: "OpenAI | None" = None
 _anthropic_client: "anthropic.Anthropic | None" = None
-_gemini_module: Any | None = None
+_gemini_client: Any | None = None
 
 _PROVIDER_ALIASES = {
     "openai": "openai",
@@ -408,11 +408,12 @@ def _call_claude_chat(model_name: str, messages: List[dict]) -> str:
 
 
 def _call_gemini_chat(model_name: str, messages: List[dict]) -> str:
-    genai = _get_gemini_module()
+    client = _get_gemini_client()
     prompt = _messages_to_prompt(messages)
     try:
-        model = genai.GenerativeModel(model_name)
-        response = _gemini_generate_content(model=model, prompt=prompt)
+        response = _gemini_generate_content(
+            client=client, model=model_name, prompt=prompt
+        )
     except Exception as exc:
         raise UpstreamServiceError(
             "LLM provider failed",
@@ -480,15 +481,15 @@ def _get_anthropic_client():
     return _anthropic_client
 
 
-def _get_gemini_module():
-    global _gemini_module
-    if _gemini_module is None:
+def _get_gemini_client():
+    global _gemini_client
+    if _gemini_client is None:
         try:
-            import google.generativeai as genai  # type: ignore
+            from google import genai  # type: ignore
         except ModuleNotFoundError as exc:
             raise DependencyMissingError(
-                "google-generativeai is required for Gemini models",
-                details=[{"dependency": "google-generativeai"}],
+                "google-genai is required for Gemini models",
+                details=[{"dependency": "google-genai"}],
             ) from exc
         api_key = settings.GEMINI_API_KEY or ""
         if not api_key:
@@ -496,9 +497,8 @@ def _get_gemini_module():
                 "GEMINI_API_KEY is required for Gemini models",
                 details=[{"env": "GEMINI_API_KEY", "alt_env": "GOOGLE_API_KEY"}],
             )
-        genai.configure(api_key=api_key)
-        _gemini_module = genai
-    return _gemini_module
+        _gemini_client = genai.Client(api_key=api_key)
+    return _gemini_client
 
 
 @retry_transient
@@ -527,5 +527,5 @@ def _anthropic_create_message(
 
 
 @retry_transient
-def _gemini_generate_content(*, model: Any, prompt: str):
-    return model.generate_content(prompt)
+def _gemini_generate_content(*, client: Any, model: str, prompt: str):
+    return client.models.generate_content(model=model, contents=prompt)
