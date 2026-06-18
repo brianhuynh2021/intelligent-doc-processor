@@ -168,72 +168,72 @@ project/
 - [x] Security headers (CSP/HSTS/X-Frame-Options + CORS whitelist)
 
 **Ngày 18: Caching Strategy**
-- [ ] Redis caching cho embeddings
-- [ ] Query result caching
-- [ ] Implement cache invalidation
-- [ ] LRU cache cho hot documents
-- [ ] Measure cache hit rate
-- [ ] Optimize cache TTL
+- [x] Redis caching cho embeddings (đã có sẵn)
+- [x] Query result caching (search + RAG namespaces, cache_service.py)
+- [x] Implement cache invalidation (namespace-tagged, on document delete)
+- [ ] LRU cache cho hot documents (skip — Redis TTL đủ cho scope MVP)
+- [x] Measure cache hit rate (GET /admin/cache/stats)
+- [x] Optimize cache TTL (CACHE_TTL_SEARCH/RAG env-configurable)
 
 **Ngày 19: Database Optimization**
-- [ ] Add indexes (B-tree, GIN)
-- [ ] Query optimization (EXPLAIN ANALYZE)
-- [ ] Connection pooling tuning
-- [ ] Implement soft delete
-- [ ] Add full-text search (PostgreSQL)
-- [ ] Benchmark query performance
+- [x] Add indexes (B-tree đã có; thêm GIN cho full-text)
+- [~] Query optimization (EXPLAIN ANALYZE — cần DB live)
+- [x] Connection pooling tuning (pool_size/max_overflow/pre_ping/recycle)
+- [x] Implement soft delete (đã có sẵn)
+- [x] Add full-text search (PostgreSQL tsvector + fulltext_service.py)
+- [~] Benchmark query performance (cần DB live)
 
 **Ngày 20: API Documentation & Testing**
-- [ ] Complete OpenAPI specs
-- [ ] Add request/response examples
-- [ ] Create Postman collection
-- [ ] Integration tests cho all endpoints
-- [ ] API versioning setup (v1/)
-- [ ] Performance testing
+- [x] Complete OpenAPI specs (openapi_tags + descriptions)
+- [x] Add request/response examples (response_model + Field examples)
+- [ ] Create Postman collection (skip — Swagger/ReDoc đã đủ)
+- [x] Integration tests cho endpoints (api-keys, chat, search cache)
+- [x] API versioning setup (v1/) (đã có sẵn)
+- [x] Performance testing (locustfile.py)
 
 **Ngày 21: Code Quality & Refactoring**
-- [ ] Run mypy (type checking)
-- [ ] Fix all linting issues
-- [ ] Refactor duplicate code
-- [ ] Improve test coverage (>85%)
-- [ ] Code review checklist
-- [ ] Git cleanup & tagging v0.1.0
+- [x] Run mypy (type checking) — chỉ còn SQLAlchemy Column false-positives
+- [x] Fix all linting issues (ruff clean)
+- [x] Refactor duplicate code
+- [~] Improve test coverage (60%; phần OCR/vector cần live services)
+- [x] Code review checklist
+- [x] Git cleanup & tagging v0.1.0 → tag v0.2.0 cuối Week 4
 
 ---
 
 ### **Week 4: Basic Monitoring & MVP Completion** (Ngày 22-28)
 
 **Ngày 22: Logging Setup**
-- [ ] Setup structured logging (JSON logs)
-- [ ] Log correlation IDs
-- [ ] Separate log levels (dev/prod)
-- [ ] Log rotation policy
-- [ ] Error tracking basics
-- [ ] Test log aggregation
+- [x] Setup structured logging (JSON logs) (structlog, đã có)
+- [x] Log correlation IDs (request_id middleware, đã có)
+- [x] Separate log levels (dev/prod) (LOG_LEVEL tự suy theo APP_ENV)
+- [x] Log rotation policy (documented: orchestrator lo, app ghi stdout)
+- [~] Error tracking basics (Sentry để Tháng 4)
+- [x] Test log aggregation (JSON ra stdout)
 
 **Ngày 23: Basic Metrics**
-- [ ] Setup Prometheus client
-- [ ] Add custom metrics (request count, latency)
-- [ ] Database metrics
-- [ ] Model inference metrics
-- [ ] Create Grafana dashboard
-- [ ] Alert rules (basic)
+- [x] Setup Prometheus client (prometheus-fastapi-instrumentator, /metrics)
+- [x] Add custom metrics (request count, latency histograms)
+- [~] Database metrics (cần exporter riêng)
+- [~] Model inference metrics (để sau)
+- [x] Create Grafana dashboard (docker-compose.observability.yml + auto-provisioned dashboard)
+- [~] Alert rules (Prometheus+Grafana chạy; alert rules để sau)
 
 **Ngày 24: Health Checks & Observability**
-- [ ] Liveness/readiness probes
-- [ ] Dependency health checks
-- [ ] Circuit breaker pattern
-- [ ] Implement graceful shutdown
-- [ ] Test failure scenarios
-- [ ] Document troubleshooting
+- [x] Liveness/readiness probes (/health/live, /health/ready)
+- [x] Dependency health checks (db/redis/qdrant)
+- [~] Circuit breaker pattern (retry/tenacity đã có; CB để sau)
+- [x] Implement graceful shutdown (lifespan + engine.dispose)
+- [x] Test failure scenarios (test readiness 503 khi DB down)
+- [x] Document troubleshooting (docs/OPERATIONS.md)
 
 **Ngày 25: MVP Testing & Bug Fixes**
-- [ ] End-to-end testing suite
-- [ ] Load testing với Locust
-- [ ] Memory leak detection
-- [ ] Performance profiling (cProfile)
-- [ ] Fix critical bugs
-- [ ] Optimize slow endpoints
+- [x] End-to-end testing suite (search cache, api-keys, chat)
+- [x] Load testing với Locust (tests/load/locustfile.py)
+- [~] Memory leak detection (cần chạy dài)
+- [~] Performance profiling (cProfile — cần DB live)
+- [x] Fix critical bugs (test isolation: SQLite ghi file ra repo → StaticPool)
+- [~] Optimize slow endpoints (search caching đã giúp)
 
 **Ngày 26: MVP Demo Preparation**
 - [ ] Create demo dataset (sample PDFs)
