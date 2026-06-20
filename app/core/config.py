@@ -129,6 +129,15 @@ class AppSettings(BaseSettings):
     )
     MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "4096"))
 
+    # Embedding provider: "openai" (text-embedding-3-small, 1536d) or
+    # "gemini" (gemini-embedding-001, dim configurable via EMBEDDING_DIM —
+    # free tier). Keep EMBEDDING_DIM in sync and recreate the Qdrant
+    # collection when switching providers (dimensions must match).
+    EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "openai").lower()
+    GEMINI_EMBEDDING_MODEL: str = os.getenv(
+        "GEMINI_EMBEDDING_MODEL", "gemini-embedding-001"
+    )
+
     # Vector Database (Add these from .env)
     VECTOR_DB_PATH: str = os.getenv("VECTOR_DB_PATH", "./data/vector_db")
     VECTOR_COLLECTION_NAME: str = os.getenv("VECTOR_COLLECTION_NAME", "documents")
