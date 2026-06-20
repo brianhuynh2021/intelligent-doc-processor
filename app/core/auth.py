@@ -10,48 +10,28 @@ from app.core.roles import UserRole, role_at_least
 from app.core.security import decode_token
 from app.models.user_model import User
 
-auth_scheme = HTTPBearer()
-api_key_auth_scheme = HTTPBearer(auto_error=False)
+# Optional so a request authenticating only with X-API-Key (no Authorization
+# header) still reaches our handler instead of being rejected by the scheme.
+auth_scheme = HTTPBearer(auto_error=False)
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(auth_scheme),
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(auth_scheme),
     db: Session = Depends(get_db),
 ) -> User:
+    """Authenticate via either a JWT (``Authorization: Bearer <jwt>``) or an
+    API key (``X-API-Key: dpk_...``, or the key as a bearer token). Returns the
+    owning :class:`User`."""
+    from app.services.api_key_service import resolve_api_key
+
     cred_exc = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    # Lấy raw token string từ header "Authorization: Bearer <token>"
-    token = credentials.credentials
-
-    try:
-        payload = decode_token(token)
-        sub: str | None = payload.get("sub")
-        if sub is None:
-            raise cred_exc
-    except JWTError:
-        raise cred_exc
-
-    user = db.query(User).filter(User.id == int(sub)).first()
-    if not user or (hasattr(user, "is_active") and not user.is_active):
-        raise cred_exc
-
-    return user
-
-
-def get_current_user_or_api_key(
-    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(api_key_auth_scheme),
-    db: Session = Depends(get_db),
-) -> User:
-    """Accept either an API key (X-API-Key header) or a JWT (Authorization
-    bearer). Useful for programmatic endpoints (e.g. MCP, scripts).
-    """
-    from app.services.api_key_service import resolve_api_key
-
+    # 1) API key via X-API-Key header
     if x_api_key:
         user = resolve_api_key(db, x_api_key)
         if user:
@@ -61,27 +41,31 @@ def get_current_user_or_api_key(
             detail="Invalid or revoked API key",
         )
 
+    # 2) Authorization: Bearer — either a dpk_ API key or a JWT
     if credentials and credentials.scheme.lower() == "bearer":
         token = credentials.credentials
         if token.startswith("dpk_"):
             user = resolve_api_key(db, token)
             if user:
                 return user
+            raise cred_exc
         try:
             payload = decode_token(token)
-            sub = payload.get("sub")
-            if sub is not None:
-                user = db.query(User).filter(User.id == int(sub)).first()
-                if user and user.is_active:
-                    return user
+            sub: str | None = payload.get("sub")
+            if sub is None:
+                raise cred_exc
         except JWTError:
-            pass
+            raise cred_exc
+        user = db.query(User).filter(User.id == int(sub)).first()
+        if not user or not user.is_active:
+            raise cred_exc
+        return user
 
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    raise cred_exc
+
+
+# Backward-compatible alias: API-key support is now built into get_current_user.
+get_current_user_or_api_key = get_current_user
 
 
 def require_role(minimum: UserRole) -> Callable[..., User]:
