@@ -90,6 +90,8 @@ services:
       # Composite URLs
       DATABASE_URL: postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-intelligent_docs}
       REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
 
     depends_on:
       db:
@@ -113,6 +115,59 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: doc_processor_worker
+    restart: unless-stopped
+    command: ["celery", "-A", "app.core.celery_app", "worker", "--loglevel=info", "--concurrency=2"]
+    networks:
+      - app-network
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-documents}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-1536}
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-intelligent_docs}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    volumes:
+      - ./app:/app/app
+      - ./uploads:/app/uploads
+      - ./scripts:/app/scripts
+
+  flower:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: doc_processor_flower
+    restart: unless-stopped
+    # Override entrypoint.sh (which runs DB migrations) — Flower only needs the
+    # Redis broker, not Postgres.
+    entrypoint: ["celery", "-A", "app.core.celery_app", "flower", "--port=5555"]
+    networks:
+      - app-network
+    ports:
+      - "5555:5555"
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    depends_on:
+      - redis
+      - worker
 
 networks:
   app-network:

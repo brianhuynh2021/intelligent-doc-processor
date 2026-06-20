@@ -171,6 +171,12 @@ class AppSettings(BaseSettings):
     CACHE_TTL_SEARCH: int = int(os.getenv("CACHE_TTL_SEARCH", "300"))  # 5 min
     CACHE_TTL_RAG: int = int(os.getenv("CACHE_TTL_RAG", "600"))  # 10 min
 
+    # Celery (separate Redis DBs from the cache on db 0)
+    CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")
+    CELERY_RESULT_BACKEND: str = os.getenv(
+        "CELERY_RESULT_BACKEND", "redis://localhost:6379/2"
+    )
+
     # CORS
     CORS_ORIGINS: str = os.getenv(
         "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"

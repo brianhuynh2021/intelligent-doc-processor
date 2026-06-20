@@ -21,8 +21,11 @@ dependencies = [
     "alembic==1.12.1",
     "asyncpg==0.29.0",
     "psycopg2-binary==2.9.9",
-    "redis==7.1.0",
+    "redis==5.2.1",  # pinned <6 to satisfy celery[redis] 5.4
     "qdrant-client==1.9.1",
+    # Background jobs
+    "celery[redis]==5.4.0",
+    "flower==2.0.1",
     # Validation / settings
     "pydantic[email]==2.12.4",
     "pydantic-settings==2.14.1",

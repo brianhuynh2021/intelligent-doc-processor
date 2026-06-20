@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
+from app.core.celery_app import celery_app
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.errors import NotFoundError
@@ -22,8 +23,21 @@ from app.services import cache_service
 from app.services.chunk_service import chunk_document
 from app.services.ingestion_pipeline import DocumentIngestionPipeline
 from app.services.ocr_service import process_document_ocr
+from app.tasks.document_tasks import process_document_task
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+@router.get("/tasks/{task_id}")
+def get_task_status(task_id: str, current_user=Depends(get_current_user)):
+    """Poll a background processing task by its Celery id."""
+    res = celery_app.AsyncResult(task_id)
+    return {
+        "task_id": task_id,
+        "state": res.state,  # PENDING / STARTED / SUCCESS / FAILURE / RETRY
+        "result": res.result if res.successful() else None,
+        "error": str(res.result) if res.failed() else None,
+    }
 
 
 @router.get("", response_model=DocumentListResponse)
@@ -184,3 +198,42 @@ def run_document_ingestion(
         chunks_indexed=result.chunks_indexed,
         steps=[IngestionStep(**s.__dict__) for s in result.steps],
     )
+
+
+@router.post("/{document_id}/process", status_code=202)
+@limiter.limit(settings.RATE_LIMIT_INGESTION)
+def process_document_async(
+    request: Request,
+    document_id: int,
+    db: Session = Depends(get_db),
+    chunk_size: int = Query(1000, ge=200, le=4000),
+    chunk_overlap: int = Query(200, ge=0, le=1000),
+    current_user=Depends(get_current_user),
+):
+    """Enqueue ingestion as a background Celery task and return immediately.
+
+    Poll progress via GET /documents/{id} (status/processing_progress) or
+    GET /documents/tasks/{task_id} for the Celery task state.
+    """
+    doc = (
+        db.query(Document)
+        .filter(Document.id == document_id, Document.is_deleted.is_(False))
+        .first()
+    )
+    if not doc:
+        raise NotFoundError("Document not found")
+
+    doc.status = "queued"
+    db.commit()
+
+    task = process_document_task.delay(
+        document_id=document_id,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+    )
+    return {
+        "task_id": task.id,
+        "document_id": document_id,
+        "status": "queued",
+        "poll": f"/api/v1/documents/tasks/{task.id}",
+    }
