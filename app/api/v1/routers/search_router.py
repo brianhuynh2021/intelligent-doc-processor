@@ -19,6 +19,7 @@ from app.schemas.search_schema import (
 )
 from app.services import cache_service
 from app.services.fulltext_service import keyword_search
+from app.services.hybrid_service import hybrid_search
 from app.services.retrieval_service import semantic_search
 
 router = APIRouter(
@@ -158,6 +159,48 @@ def keyword_search_endpoint(
                 "status": h.status,
                 "owner_id": h.owner_id,
                 "rank": h.rank,
+            }
+            for h in hits
+        ],
+    }
+
+
+@router.get("/hybrid")
+@limiter.limit(settings.RATE_LIMIT_SEARCH)
+def hybrid_search_endpoint(
+    request: Request,
+    q: str = Query(..., min_length=1, max_length=1000, description="Search terms"),
+    top_k: int = Query(5, ge=1, le=50),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Hybrid search: semantic (vector) + keyword (full-text) fused with
+    Reciprocal Rank Fusion, returning the most relevant documents.
+
+    Non-admins are scoped to their own documents (both halves).
+    """
+    user_role = getattr(current_user, "role", None) or (
+        "admin" if getattr(current_user, "is_admin", False) else "user"
+    )
+    is_admin = role_at_least(user_role, UserRole.ADMIN)
+    owner_id = None if is_admin else current_user.id
+    qdrant_filter = (
+        None if is_admin else build_qdrant_filter(SearchFilter(owner_id=owner_id))
+    )
+
+    hits = hybrid_search(
+        db, q, top_k=top_k, owner_id=owner_id, qdrant_filter=qdrant_filter
+    )
+    return {
+        "query": q,
+        "results": [
+            {
+                "document_id": h.document_id,
+                "name": h.name,
+                "rrf_score": h.rrf_score,
+                "semantic_rank": h.semantic_rank,
+                "keyword_rank": h.keyword_rank,
+                "snippet": h.snippet,
             }
             for h in hits
         ],
